@@ -236,7 +236,7 @@ def validate_model_card() -> None:
     front = text.split("---", 2)[1]
     for key in ("license:", "model_card_spec:", "base_model:"):
         _check(key in front, f"MODEL_CARD.md missing front-matter field: {key}")
-    _check('model_card_spec: "1.1"' in front, "MODEL_CARD.md model_card_spec must be 1.0")
+    _check('model_card_spec: "1.1"' in front, "MODEL_CARD.md model_card_spec must be 1.1")
     _check(f"base_model: {EXPECTED_MODEL_ID}" in front, "MODEL_CARD.md base_model must equal MODEL_ID")
     _check(not PLACEHOLDER.search(text), "MODEL_CARD.md contains placeholder/scaffolding text")
     _check(not UNSUPPORTED_CLAIMS.search(text), "MODEL_CARD.md makes an unsupported release/benchmark claim")
