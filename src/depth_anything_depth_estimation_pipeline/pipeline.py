@@ -65,6 +65,46 @@ def verify_snapshot(path: str | Path | None = None) -> dict[str, Any]:
     }
 
 
+def _hub_download(relative_path: str, root: Path) -> None:
+    """Fetch one manifest-listed file at MODEL_REVISION straight into the snapshot directory."""
+    from huggingface_hub import hf_hub_download
+
+    hf_hub_download(MODEL_ID, relative_path, revision=MODEL_REVISION, local_dir=str(root))
+
+
+def stage_missing_files(
+    path: str | Path | None = None,
+    *,
+    allow_download: bool = False,
+    downloader: Callable[[str, Path], None] | None = None,
+) -> list[str]:
+    """Fetch manifest-listed files that are absent locally (a fresh clone commits the manifest but
+    git-ignores the weights). Returns the relative paths fetched; `verify_snapshot` still runs after."""
+    root = Path(path) if path is not None else DEFAULT_WEIGHTS_DIR
+    manifest_path = root / MANIFEST_NAME
+    if not manifest_path.is_file():
+        raise FileNotFoundError(f"manifest not found: {manifest_path}")
+    with open(manifest_path, encoding="utf-8") as fh:
+        manifest = json.load(fh)
+    if manifest.get("modelId") != MODEL_ID or manifest.get("revision") != MODEL_REVISION:
+        raise ValueError(
+            f"manifest names {manifest.get('modelId')}@{manifest.get('revision')}, "
+            f"package pins {MODEL_ID}@{MODEL_REVISION}; refusing to stage"
+        )
+    missing = [entry["path"] for entry in manifest["files"] if not (root / entry["path"]).is_file()]
+    if not missing:
+        return []
+    if not allow_download:
+        raise FileNotFoundError(
+            f"snapshot at {root} is missing {missing}; "
+            f"pass allow_download=True to fetch them at {MODEL_REVISION}"
+        )
+    fetch = downloader or _hub_download
+    for relative_path in missing:
+        fetch(relative_path, root)
+    return missing
+
+
 def abs_rel(pred: np.ndarray, ref_depth: np.ndarray, *, align: bool = True) -> float:
     """Absolute relative error of a relative inverse-depth map against caller-supplied metric depth.
 
@@ -125,6 +165,7 @@ class DepthAnythingPipeline:
         resolved_device = device or ("cuda:0" if torch.cuda.is_available() else "cpu")
         root = Path(weights_dir) if weights_dir is not None else DEFAULT_WEIGHTS_DIR
         if (root / MANIFEST_NAME).is_file():
+            stage_missing_files(root, allow_download=allow_download)
             verify_snapshot(root)
             source, kwargs = str(root), {"local_files_only": True}
         elif allow_download:

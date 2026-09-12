@@ -17,6 +17,7 @@ from depth_anything_depth_estimation_pipeline import (
     MODEL_REVISION,
     DepthAnythingPipeline,
     abs_rel,
+    stage_missing_files,
     verify_snapshot,
 )
 
@@ -133,3 +134,38 @@ def test_abs_rel_alignment():
     assert abs_rel(ref_depth * 1.1, ref_depth, align=False) == pytest.approx(0.1)
     with pytest.raises(ValueError):
         abs_rel(pred[:8], ref_depth)
+
+
+def test_stage_missing_files_fetches_only_absent_entries_then_verifies(tmp_path):
+    """Fresh-clone shape: manifest committed, weight file absent. allow_download fetches exactly that file."""
+    payload = b"weights-bytes"
+    (tmp_path / "config.json").write_bytes(b"{}")
+    manifest = {
+        "modelId": MODEL_ID,
+        "revision": MODEL_REVISION,
+        "files": [
+            {"path": "config.json", "bytes": 2, "sha256": hashlib.sha256(b"{}").hexdigest()},
+            {"path": "model.bin", "bytes": len(payload), "sha256": hashlib.sha256(payload).hexdigest()},
+        ],
+    }
+    (tmp_path / "dimer-base-manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
+    with pytest.raises(FileNotFoundError, match="allow_download=True"):
+        stage_missing_files(tmp_path)
+    fetched = []
+
+    def fake_download(relative_path, root):
+        fetched.append(relative_path)
+        (root / relative_path).write_bytes(payload)
+
+    assert stage_missing_files(tmp_path, allow_download=True, downloader=fake_download) == ["model.bin"]
+    assert fetched == ["model.bin"]
+    listed = verify_snapshot(tmp_path)["files"]
+    assert (listed if isinstance(listed, int) else len(listed)) == 2
+    assert stage_missing_files(tmp_path, allow_download=True, downloader=fake_download) == []
+
+
+def test_stage_missing_files_refuses_foreign_manifest(tmp_path):
+    manifest = {"modelId": "someone/else", "revision": MODEL_REVISION, "files": []}
+    (tmp_path / "dimer-base-manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
+    with pytest.raises(ValueError, match="refusing to stage"):
+        stage_missing_files(tmp_path, allow_download=True, downloader=lambda *_: None)

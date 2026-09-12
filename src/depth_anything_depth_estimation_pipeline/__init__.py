@@ -9,6 +9,7 @@ from .pipeline import (
     MODEL_REVISION,
     DepthAnythingPipeline,
     abs_rel,
+    stage_missing_files,
     verify_snapshot,
 )
 
@@ -23,5 +24,6 @@ __all__ = [
     "MODEL_REVISION",
     "DepthAnythingPipeline",
     "abs_rel",
+    "stage_missing_files",
     "verify_snapshot",
 ]
