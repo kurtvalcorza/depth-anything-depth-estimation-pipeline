@@ -1,14 +1,55 @@
-# depth-anything-depth-estimation-pipeline
+# Depth Anything V2 Small depth-estimation pipeline
 
-DIMER pipeline scaffold for **depth-anything/Depth-Anything-V2-Small-hf** — Depth Estimation.
+DIMER inference wrapper for **Depth Anything V2 Small** (`depth-anything/Depth-Anything-V2-Small-hf`), pinned to an immutable Hugging Face revision and loaded only from a digest-verified local snapshot. The pipeline returns *relative inverse depth* at the input resolution; metric depth is out of scope.
 
-| | |
-|---|---|
-| Upstream model | [`depth-anything/Depth-Anything-V2-Small-hf`](https://huggingface.co/depth-anything/Depth-Anything-V2-Small-hf) |
-| Pinned revision | `5426e4f0f36572d16453bbda7a8389317b1bef99` (resolved 2026-09-12) |
-| Upstream license | `apache-2.0` (verified on the Hub 2026-09-12; re-check at the pinned revision before release) |
-| Weight files to stage | `model.safetensors` |
-| Status | scaffold only — no weights downloaded, no pipeline code yet |
+## Upstream alignment
 
-Weights are staged under `weights/` and are git-ignored. This repository follows the
-MODEL_CARD_SPEC 1.0 / NOTEBOOK_SPEC 1.0 conventions used by the other `*-pipeline` repos.
+- Model: `depth-anything/Depth-Anything-V2-Small-hf`
+- Revision: `5426e4f0f36572d16453bbda7a8389317b1bef99`
+- Upstream weight license: Apache-2.0
+- Upstream task: monocular relative depth estimation
+- Repository adaptation: **none**; inference only
+
+## Quick start
+
+```python
+from PIL import Image
+from depth_anything_depth_estimation_pipeline import DepthAnythingPipeline, abs_rel
+
+pipe = DepthAnythingPipeline.from_pretrained()          # verifies weights/depth-anything-v2-small first
+result = pipe.predict(Image.open("photo.jpg"))
+depth = result["depth"]                                  # float32 H x W, larger = nearer, relative scale
+print(result["depth_kind"], depth.shape, result["depth_min"], result["depth_max"])
+
+# optional: score against caller-supplied metric depth of the same shape
+# error = abs_rel(depth, reference_depth_metres)
+```
+
+Install into a Python 3.12 environment that already holds the pinned dependencies with `pip install -e . --no-deps`; run `pytest -q -o addopts= tests` for the offline test suite (no weights needed).
+
+## Weights layout
+
+```
+weights/depth-anything-v2-small/
+  dimer-base-manifest.json   # modelId, revision, per-file bytes + SHA-256
+  config.json
+  preprocessor_config.json
+  model.safetensors          # git-ignored, 99,173,660 bytes
+  README.md
+```
+
+`verify_snapshot()` checks every file against the manifest before `from_pretrained` loads anything; `allow_download=True` is the only way to fetch from the Hub, and it still pins `revision`.
+
+## Input ceilings
+
+`MIN_IMAGE_SIDE = 14`, `MAX_IMAGE_SIDE = 4096`, `MAX_ASPECT_RATIO = 4.0`; one image per call. See `MODEL_CARD.md` for the measured memory behind those numbers.
+
+## Documentation
+
+- `MODEL_CARD.md` — MODEL_CARD_SPEC 1.0 card, provenance digests, input/output contract, measured runtime.
+- `docs/WEIGHTS.md` — weight provenance and hosting notes.
+- `STATUS.md` — release status.
+
+## Licensing
+
+This repository's code is Apache-2.0 (see `LICENSE`). The upstream weights are Apache-2.0; see `docs/WEIGHTS.md` and `MODEL_CARD.md`.
