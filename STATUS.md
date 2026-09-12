@@ -1,3 +1,3 @@
 # Release status
 
-Current status: **Candidate / source-complete**. This is the model-card pass only: the pipeline package, offline unit tests, a local GPU/CPU smoke run, and `MODEL_CARD.md` exist; no tutorial notebook has been written yet, and no clean-runtime notebook evidence exists. The repository is not release-grade until the NOTEBOOK_SPEC 1.0 tutorial pass lands and its execution evidence is recorded.
+Current status: **Candidate** — tutorial source complete, awaiting clean-runtime execution. The pipeline package, offline unit tests, a local GPU/CPU smoke run, `MODEL_CARD.md`, and the `TASK-INFERENCE` tutorial notebook with its static validator and CI workflow exist. Unit tests and static conformance checks are expected to run in GitHub Actions. The tutorial remains non-release-grade until clean-runtime execution evidence for the exact candidate commit is recorded according to `docs/release-verification.md`.

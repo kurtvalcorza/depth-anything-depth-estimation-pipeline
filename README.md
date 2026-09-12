@@ -44,6 +44,16 @@ weights/depth-anything-v2-small/
 
 `MIN_IMAGE_SIDE = 14`, `MAX_IMAGE_SIDE = 4096`, `MAX_ASPECT_RATIO = 4.0`; one image per call. See `MODEL_CARD.md` for the measured memory behind those numbers.
 
+## Tutorial
+
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/kurtvalcorza/depth-anything-depth-estimation-pipeline/blob/main/tutorials/depth_anything_depth_estimation_colab.ipynb)
+
+`tutorials/depth_anything_depth_estimation_colab.ipynb` is declared `TASK-INFERENCE` (see `tutorials/README.md`). Its default path generates a synthetic 320 x 240 image in code, surfaces the input ceilings, stages the manifest-listed snapshot files missing from a fresh clone with `stage_missing_files(..., allow_download=True)` and digest-verifies them with `verify_snapshot`, predicts relative inverse depth through the public API, and exports the depth array plus a provenance JSON. No metric is reported on the default path because the synthetic sample has no ground-truth depth; `abs_rel` is applied only when a BYOD image comes with a metric depth map. BYOD is optional and gated off by default.
+
+## Release status
+
+**Candidate.** Static/unit checks do not constitute clean-runtime notebook evidence. Complete `docs/release-verification.md` against the exact release revision before calling the notebook release-grade.
+
 ## Documentation
 
 - `MODEL_CARD.md` — MODEL_CARD_SPEC 1.0 card, provenance digests, input/output contract, measured runtime.
