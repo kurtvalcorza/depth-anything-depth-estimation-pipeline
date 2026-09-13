@@ -308,7 +308,8 @@ def render(repo: Path, template: dict[str, Any], revision: str | None = None) ->
         "fetched = stage_missing_files(WEIGHTS_DIR, allow_download=True)\n"
         "print({'weights_dir': str(WEIGHTS_DIR), 'fetched': fetched})\n"
         "snapshot = verify_snapshot(WEIGHTS_DIR)\n"
-        "print({'verified_files': [entry['path'] for entry in snapshot.get('files', [])]})\n"
+        "_files = snapshot.get('files', []) if isinstance(snapshot, dict) else []\n"
+        "print({'verified_files': len(_files) if isinstance(_files, list) else _files, 'revision': snapshot.get('revision', MODEL_REVISION) if isinstance(snapshot, dict) else MODEL_REVISION})\n"
         f"pipe = {template['pipeline_class']}.from_pretrained(weights_dir=WEIGHTS_DIR)\n"
         "print({'device': getattr(pipe, 'device', None), 'source': getattr(pipe, 'source', 'local-snapshot')})"
     )
