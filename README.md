@@ -52,7 +52,8 @@ weights/depth-anything-v2-small/
 
 ## Release status
 
-**Candidate.** Static/unit checks do not constitute clean-runtime notebook evidence. Complete `docs/release-verification.md` against the exact release revision before calling the notebook release-grade.
+**Release-grade.** Clean-room execution evidence recorded on Kaggle Tesla T4 GPU in `docs/release-verification.md` and `evidence/release-verification-kaggle.json`.
+
 
 ## Documentation
 

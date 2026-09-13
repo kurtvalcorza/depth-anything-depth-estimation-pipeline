@@ -14,7 +14,8 @@ and regenerate (`python tools/build_notebook.py`; `--check` is enforced by the v
 
 | Notebook | Profile | Carrier | Capability | Default runtime | BYOD | Release status |
 |---|---|---|---|---|---|---|
-| `depth_anything_depth_estimation_colab.ipynb` | `TASK-INFERENCE` | standalone (generated) | Depth Anything V2 Small monocular relative (inverse) depth estimation on a synthetic in-code sample; `validate_inputs` → input manifest; `evaluation_report` → `sample-sanity` with `abs_rel` only when the caller supplies metric ground truth, otherwise `not-measurable` | CPU (CUDA used automatically when available) | single image file, gated off by default; optional metric depth map | **Candidate** — static checks pass; the clean-runtime execution run is pending and will be recorded in `../docs/release-verification.md`, which must be reviewed for the exact notebook revision before promotion |
+| `depth_anything_depth_estimation_colab.ipynb` | `TASK-INFERENCE` | standalone (generated) | Depth Anything V2 Small monocular relative (inverse) depth estimation on a synthetic in-code sample; `validate_inputs` → input manifest; `evaluation_report` → `sample-sanity` with `abs_rel` only when the caller supplies metric ground truth, otherwise `not-measurable` | CPU (CUDA used automatically when available) | single image file, gated off by default; optional metric depth map | **Release-grade** — clean-runtime execution verified on Kaggle Tesla T4 GPU; recorded in `../docs/release-verification.md` and `../evidence/release-verification-kaggle.json` |
+
 
 ## Conformance notes
 
