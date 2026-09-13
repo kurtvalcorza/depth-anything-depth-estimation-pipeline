@@ -55,19 +55,22 @@ def test_par1_embedded_module_equals_repository_module(notebook: dict) -> None:
     assert len(tagged) == 1, "exactly one cell must be tagged metadata.dimer.embedded_module"
     cell = tagged[0]
     assert cell["metadata"]["dimer"]["embedded_module"] == f"src/{TEMPLATE['package']}/pipeline.py"
-    expected = build.apply_rewrites(MODULE.read_text(encoding="utf-8"))
+    expected = build.apply_rewrites(MODULE.read_text(encoding="utf-8"), REWRITES)
     drifted = "embedded module drifted from src/; regenerate the notebook"
     assert _source(cell).rstrip("\n") + "\n" == expected, drifted
 
 
+REWRITES = TEMPLATE.get("rewrites", build.REWRITES)  # a template may declare its own rules (generator /2)
+
+
 def test_par1_rewrite_rules_are_the_only_difference() -> None:
     module = MODULE.read_text(encoding="utf-8")
-    rewritten = build.apply_rewrites(module)
+    rewritten = build.apply_rewrites(module, REWRITES)
     diff = [(a, b) for a, b in zip(module.splitlines(), rewritten.splitlines(), strict=True) if a != b]
-    assert len(diff) == len(build.REWRITES)
+    assert len(diff) == len(REWRITES)
     for original, replaced in diff:
-        assert original.startswith("DEFAULT_WEIGHTS_DIR = Path(__file__)")
-        assert replaced.startswith('DEFAULT_WEIGHTS_DIR = Path.cwd() / "weights" / MODEL_KEY')
+        assert "__file__" in original, original
+        assert "__file__" not in replaced and "standalone rewrite" in replaced, replaced
 
 
 def test_par2_inline_manifest_and_pins_match_repository(notebook: dict) -> None:
