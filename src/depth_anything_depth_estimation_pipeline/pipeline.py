@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-from collections.abc import Callable
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -143,6 +143,119 @@ def validate_image(image: Any) -> Image.Image:
     if long / short > MAX_ASPECT_RATIO:
         raise ValueError(f"aspect ratio {long / short:.2f} > MAX_ASPECT_RATIO {MAX_ASPECT_RATIO}")
     return image.convert("RGB")
+
+
+INPUT_SCHEMA: dict[str, Any] = {
+    "input": "PIL.Image.Image, or a sequence of them for the validation stage; any mode, converted to RGB",
+    "short_side_px": [MIN_IMAGE_SIDE, MAX_IMAGE_SIDE],
+    "long_side_px": [MIN_IMAGE_SIDE, MAX_IMAGE_SIDE],
+    "aspect_ratio": [1.0, MAX_ASPECT_RATIO],
+    "output": f"{DEPTH_KIND} inverse depth, float32 H x W at the input resolution (larger = nearer)",
+    "preprocessing": (
+        "convert to RGB; the DPT processor rescales the sides to multiples of 14 near 518 px and the "
+        "raw prediction is interpolated back (bicubic) to the input resolution"
+    ),
+}
+
+
+def validate_inputs(
+    images: Any, *, names: Sequence[str] | None = None
+) -> dict[str, Any]:
+    """Validation stage: return the input manifest (schema, per-input observations, verdict).
+
+    Each image is routed through the public ``validate_image`` that ``predict`` itself calls, so a
+    rejection here raises exactly what ``predict`` would; a caller that wants the finding recorded
+    catches the exception and stores ``str(exc)`` under ``findings``.
+    """
+    batch = [images] if isinstance(images, Image.Image) else images
+    if not isinstance(batch, Sequence) or isinstance(batch, str | bytes):
+        raise TypeError("images must be a PIL.Image.Image or a sequence of them")
+    if len(batch) < 1:
+        raise ValueError("at least one image is required")
+    if names is not None and len(names) != len(batch):
+        raise ValueError("names must have one entry per image")
+    inputs = []
+    for index, candidate in enumerate(batch):
+        rgb = validate_image(candidate)
+        width, height = rgb.size
+        long_side, short_side = max(width, height), min(width, height)
+        inputs.append(
+            {
+                "id": names[index] if names else f"image-{index}",
+                "mode": getattr(candidate, "mode", rgb.mode),
+                "size": [width, height],
+                "aspect_ratio": round(long_side / short_side, 3),
+            }
+        )
+    return {
+        "schema": dict(INPUT_SCHEMA),
+        "inputs": inputs,
+        "n_images": len(inputs),
+        "verdict": "accepted",
+        "findings": [],
+        "model_id": MODEL_ID,
+        "model_revision": MODEL_REVISION,
+    }
+
+
+def evaluation_report(
+    result: Mapping[str, Any],
+    reference_depth: Any | None = None,
+    *,
+    sample_kind: str = "synthetic",
+) -> dict[str, Any]:
+    """Evaluation stage: a machine-readable report even when nothing is measurable.
+
+    With ``reference_depth`` (metric depth in metres, same H x W as the prediction) the report carries
+    ``abs_rel`` computed by the repository's own helper after least-squares affine alignment in inverse
+    depth, as sample-sanity evidence. Without it the verdict is ``not-measurable`` and the report says
+    what ground truth would make the task measurable: relative inverse depth has no intrinsic score.
+    """
+    depth = np.asarray(result["depth"])
+    base = {
+        "task": "monocular relative depth estimation",
+        "score_semantics": (
+            f"{result.get('depth_kind', DEPTH_KIND)} inverse depth with unknown per-image scale and shift: "
+            "larger is nearer, values are not metres, carry no confidence, and no threshold is shipped"
+        ),
+        "sample_kind": sample_kind,
+        "n_images": 1,
+        "n_pixels": int(depth.size),
+        "baselines": [],
+        "model_id": MODEL_ID,
+        "model_revision": MODEL_REVISION,
+    }
+    if reference_depth is None:
+        return {
+            **base,
+            "metrics": [],
+            "verdict": "not-measurable",
+            "reason": "no metric reference depth was supplied for the evaluated image",
+            "needs": (
+                "a metric depth map in metres with the same height and width as the image, from a depth "
+                "sensor, LiDAR, or an RGB-D benchmark, scored with abs_rel(pred, ref_depth, align=True) "
+                "against a constant-depth or vertical-gradient prior as the trivial baseline"
+            ),
+        }
+    ref = np.asarray(reference_depth, dtype=np.float64)
+    valid = int((np.isfinite(ref) & (ref > 0)).sum())
+    return {
+        **base,
+        "metrics": [
+            {
+                "id": "abs_rel",
+                "value": abs_rel(depth, ref, align=True),
+                "align": True,
+                "n_valid_pixels": valid,
+                "estimation": (
+                    "single image, least-squares affine alignment in inverse depth, no dispersion estimate"
+                ),
+            }
+        ],
+        "verdict": "sample-sanity",
+        "reason": "one image with caller-supplied metric depth from the tutorial sample; not a benchmark",
+        "needs": "a held-out set of metric depth maps from the deployment domain for any generalisable claim",
+    }
 
 
 @dataclass
