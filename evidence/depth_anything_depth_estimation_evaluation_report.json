@@ -1,0 +1,14 @@
+{
+  "task": "monocular relative depth estimation",
+  "score_semantics": "relative inverse depth with unknown per-image scale and shift: larger is nearer, values are not metres, carry no confidence, and no threshold is shipped",
+  "sample_kind": "synthetic",
+  "n_images": 1,
+  "n_pixels": 76800,
+  "baselines": [],
+  "model_id": "depth-anything/Depth-Anything-V2-Small-hf",
+  "model_revision": "5426e4f0f36572d16453bbda7a8389317b1bef99",
+  "metrics": [],
+  "verdict": "not-measurable",
+  "reason": "no metric reference depth was supplied for the evaluated image",
+  "needs": "a metric depth map in metres with the same height and width as the image, from a depth sensor, LiDAR, or an RGB-D benchmark, scored with abs_rel(pred, ref_depth, align=True) against a constant-depth or vertical-gradient prior as the trivial baseline"
+}

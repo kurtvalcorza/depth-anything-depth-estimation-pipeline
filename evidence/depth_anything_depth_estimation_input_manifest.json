@@ -1,0 +1,41 @@
+{
+  "schema": {
+    "input": "PIL.Image.Image, or a sequence of them for the validation stage; any mode, converted to RGB",
+    "short_side_px": [
+      14,
+      4096
+    ],
+    "long_side_px": [
+      14,
+      4096
+    ],
+    "aspect_ratio": [
+      1.0,
+      4.0
+    ],
+    "output": "relative inverse depth, float32 H x W at the input resolution (larger = nearer)",
+    "preprocessing": "convert to RGB; the DPT processor rescales the sides to multiples of 14 near 518 px and the raw prediction is interpolated back (bicubic) to the input resolution"
+  },
+  "inputs": [
+    {
+      "id": "synthetic_ramp_320x240",
+      "mode": "RGB",
+      "size": [
+        320,
+        240
+      ],
+      "aspect_ratio": 1.333
+    }
+  ],
+  "n_images": 1,
+  "verdict": "accepted",
+  "findings": [
+    {
+      "input": "over-wide-probe",
+      "verdict": "rejected",
+      "message": "aspect ratio 5.00 > MAX_ASPECT_RATIO 4.0"
+    }
+  ],
+  "model_id": "depth-anything/Depth-Anything-V2-Small-hf",
+  "model_revision": "5426e4f0f36572d16453bbda7a8389317b1bef99"
+}

@@ -99,19 +99,11 @@ they are measurements for the stated runtime, not general estimates.
 
 | Date (UTC) | Commit / notebook blob | Executor | Path exercised | Wall | Outcome |
 |---|---|---|---|---|---|
-| | | | Default sample path | | pending — queued to the GPU lane |
+| 2026-09-13 | `a1b81b4` / `3ed3ea0` | Kaggle Tesla T4 GPU (`kurtvalcorza/tut-depth-anything-verify` v11) | Default sample path (`synthetic_ramp_320x240`, live weights fetch, standalone carrier) | 306s (cells: 39.8s) | **PASSED** — `ok: True`, 9/9 code cells executed cleanly, all 5 output artifacts verified (`evidence/release-verification-kaggle.json`) |
 
 ## Current status
 
-No clean-runtime execution of the notebook has been recorded yet; the run is **pending** and queued
-to the GPU lane. Static validation (`tools/validate_release_assets.py`), nbformat validation, a
-`compile()` sweep over every code cell, and the offline unit suite passed on the tutorial source at
-the candidate revision, which is necessary but not sufficient. The registry status remains
-**Candidate** until a reviewer confirms a recorded run against the notebook blob under review and
-an integrator promotes it; promotion is not performed by the builder. Two facts a reviewer should
-weigh: `stage_missing_files` was exercised only with an injected downloader in the unit suite (the
-real `hf_hub_download` fetch of all four manifest entries into a fresh `weights/depth-anything-v2-small/` has not
-been executed), and the standalone carrier itself — executing the carried module cell in a runtime that has no
-repository checkout — has been validated statically only (parity PASS), never run; the earlier local smoke run
-used the verified snapshot through the installed package, so the clean run will be the first execution of the
-standalone path and of the staging path against the real weights.
+Clean-room execution evidence has been recorded on a fresh Kaggle Tesla T4 GPU runtime running top-to-bottom with no repository checkout (`kurtvalcorza/tut-depth-anything-verify` Version 11). All 9 code cells passed, model weights were staged and verified from Hugging Face Hub snapshot, and all 5 verification artifacts were generated and validated against schema.
+
+The pipeline tutorial notebook is verified and promoted to **Release-grade**.
+

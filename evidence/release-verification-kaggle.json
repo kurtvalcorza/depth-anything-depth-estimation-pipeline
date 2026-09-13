@@ -1,0 +1,55 @@
+{
+  "schemaVersion": "1.0",
+  "pipelineId": "org.valcorza.depth-anything-depth-estimation",
+  "task": "depth-estimation",
+  "verificationTarget": {
+    "repository": "kurtvalcorza/depth-anything-depth-estimation-pipeline",
+    "targetCommit": "a1b81b4eb3ad8f071e87798c5d8c271c5f669417",
+    "targetBranch": "main",
+    "notebookPath": "tutorials/depth_anything_depth_estimation_colab.ipynb",
+    "notebookSha256": "bce48039458088afc29639328699739375425656c23c29217ecfa0a0a2f9f653"
+  },
+  "executionEnvironment": {
+    "platform": "kaggle-cloud",
+    "kernelSlug": "kurtvalcorza/tut-depth-anything-verify",
+    "kernelVersion": 11,
+    "kernelUrl": "https://www.kaggle.com/code/kurtvalcorza/tut-depth-anything-verify",
+    "os": "Linux-6.12.90+-x86_64",
+    "python": "3.12.13",
+    "accelerator": "NvidiaTeslaT4",
+    "gpu": "Tesla T4",
+    "cudaAvailable": true,
+    "driverVersion": "580.159.04",
+    "executedAt": "2026-09-13T08:26:21Z"
+  },
+  "runtimeVersions": {
+    "torch": "2.14.0+cu130",
+    "transformers": "4.57.6",
+    "safetensors": "0.8.0",
+    "numpy": "2.5.3",
+    "pillow": "11.3.0",
+    "huggingface-hub": "0.36.2"
+  },
+  "modelTarget": {
+    "modelId": "depth-anything/Depth-Anything-V2-Small-hf",
+    "modelRevision": "5426e4f0f36572d16453bbda7a8389317b1bef99",
+    "license": "apache-2.0"
+  },
+  "gateResults": {
+    "cellsExecuted": 9,
+    "cellsPassed": 9,
+    "exitCode": 0,
+    "overallOk": true,
+    "totalCellWallSeconds": 39.76,
+    "pipelineWallSeconds": 306
+  },
+  "artifacts": [
+    "depth_anything_depth_estimation_depth.npy",
+    "depth_anything_depth_estimation_evaluation_report.json",
+    "depth_anything_depth_estimation_input_manifest.json",
+    "depth_anything_depth_estimation_preview.png",
+    "depth_anything_depth_estimation_result.json",
+    "report.json"
+  ],
+  "overallStatus": "PASSED"
+}
