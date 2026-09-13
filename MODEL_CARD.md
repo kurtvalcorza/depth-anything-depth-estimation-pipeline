@@ -3,6 +3,8 @@ license: apache-2.0
 model_card_spec: "1.1"
 pipeline_tag: depth-estimation
 base_model: depth-anything/Depth-Anything-V2-Small-hf
+date_published: "2024-06-18"
+date_published_source: "Hugging Face Hub repository creation date of the exact hosted checkpoint (`createdAt`, https://huggingface.co/api/models/depth-anything/Depth-Anything-V2-Small-hf)"
 ---
 
 # Depth Anything V2 Small (DIMER package v0.1.0) — Monocular Relative Depth Estimation
@@ -11,7 +13,6 @@ base_model: depth-anything/Depth-Anything-V2-Small-hf
 [![Upstream GitHub](https://img.shields.io/badge/Upstream%20GitHub-DepthAnything%2FDepth--Anything--V2-181717?style=flat&logo=github&logoColor=white)](https://github.com/DepthAnything/Depth-Anything-V2)
 [![arXiv Paper](https://img.shields.io/badge/arXiv-2406.09414-b31b1b.svg)](https://arxiv.org/abs/2406.09414)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Pipeline](https://img.shields.io/badge/Pipeline-depth--anything--depth--estimation--pipeline-2ea44f?style=flat&logo=github)](https://github.com/kurtvalcorza/depth-anything-depth-estimation-pipeline)
 
 > [!WARNING]
 > ⚠️ **Provided for research, training, and evaluation purposes only.** Model weights are redistributed unmodified under their upstream license, which controls your use, including any commercial use or redistribution; the accompanying code and notebooks are released under this repository's license. All of it is supplied **"as is"**, without warranty of any kind, and has not been validated for production, clinical, or safety-critical use. Running the notebooks downloads third-party weights and datasets governed by their own licenses and consumes compute on your own Colab/Kaggle account. To the maximum extent permitted by law, the maintainers of this repository and the DIMER platform accept no liability for any damages arising from their use. Hosting implies no affiliation with or endorsement by the original authors.
@@ -28,7 +29,7 @@ This pipeline provides a ready-to-run interactive Google Colab notebook that exe
 
 ---
 
-###### Description
+#### Description
 
 Depth Anything V2 Small is the smallest Transformers-format checkpoint of the Depth Anything V2 family, published as `depth-anything/Depth-Anything-V2-Small-hf` and pinned here to revision `5426e4f0f36572d16453bbda7a8389317b1bef99`. The snapshot `config.json` declares a `DepthAnythingForDepthEstimation` architecture: a DINOv2 ViT-S backbone (hidden size 384, patch size 14, four tapped stages) feeding a DPT-style reassemble/fusion neck (hidden sizes 48/96/192/384, fusion width 64) and a convolutional depth head. At inference the model reads one RGB image and emits a single-channel map of *relative inverse depth* — larger values are nearer — with no metric scale, and no adaptation happens at inference time. This repository adds nothing to the weights: it contributes `verify_snapshot` (manifest digest checking), `DepthAnythingPipeline.from_pretrained` (verified local loading with `trust_remote_code=False`), `predict` (input validation, resizing of the output back to the input resolution), the `abs_rel` helper for caller-supplied ground truth, and this card.
 

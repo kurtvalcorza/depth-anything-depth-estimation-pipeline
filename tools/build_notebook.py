@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate a STANDALONE DIMER tutorial notebook (NOTEBOOK_SPEC 1.1 §3.6) from repository sources — /2.
+"""Generate a STANDALONE DIMER tutorial notebook (NOTEBOOK_SPEC 2.0 §4) from repository sources — /2.
 
 /2 adds to /1: multi-module packages (one tagged cell per module, topologically ordered, package-relative
 imports removed), template-declared rewrite rules, and extra pinned snapshots (`extra_weights`) for packages
@@ -28,7 +28,7 @@ from pathlib import Path
 from typing import Any
 
 GENERATOR_VERSION = "build_notebook.py/2"
-NOTEBOOK_SPEC = "1.1"
+NOTEBOOK_SPEC = "2.0"
 
 # ST2: default rewrite rule; a template may replace it with its own `rewrites` list. Every rule must
 # match exactly once across the embedded modules, so a silent no-op is impossible.
@@ -314,9 +314,46 @@ def _md(source: str) -> dict[str, Any]:
 def _code(source: str, metadata: dict[str, Any] | None = None) -> dict[str, Any]:
     return {"cell_type": "code", "execution_count": None, "id": "", "metadata": metadata or {}, "outputs": [], "source": source.rstrip("\n")}
 
+# NOTEBOOK_SPEC 2.0 §3.4/§28 declarations. A template MAY override `mode`, `run_all` and `byod`;
+# E2E and ARTIFACT-INFERENCE templates MUST state `run_all` themselves (their default paths differ).
+MODES = ("REFERENCE", "GUIDED", "WORKSHOP")
+_RUN_ALL_DEFAULT = {
+    "TASK-INFERENCE": (
+        "Selecting **Run all** in a fresh supported runtime installs the pinned dependencies, stages and digest-verifies the "
+        "pinned snapshot, obtains the tutorial sample automatically, validates it into an input manifest before the model "
+        "runs, runs the task locally in this kernel, writes the evaluation report, and exports machine-readable outputs "
+        "with provenance. The default path needs no repository clone, no DIMER worker or service, no credential, no upload "
+        "dialog and no configuration edit (NOTEBOOK_SPEC 2.0 §5)."
+    ),
+    "MULTI-CAPABILITY": (
+        "Selecting **Run all** in a fresh supported runtime installs the pinned dependencies, stages and digest-verifies the "
+        "pinned snapshot, obtains the tutorial sample automatically, validates it into an input manifest before the model "
+        "runs, runs every demonstrated capability locally in this kernel with its own input/output contract, writes the "
+        "evaluation report, and exports machine-readable outputs with provenance. The default path needs no repository "
+        "clone, no DIMER worker or service, no credential, no upload dialog and no configuration edit (NOTEBOOK_SPEC 2.0 §5)."
+    ),
+}
+_BYOD_DEFAULT = (
+    "After the sample workflow completes, set `USE_BYOD = True` in the sample cell and re-run from that cell to supply "
+    "your own input. It passes through the same notebook-local validation, task, evaluation-report and export cells as "
+    "the sample; the expected input format, the ceilings and the privacy guidance are stated in the Prerequisites and "
+    "in the sample cell, and the upload stays inside this runtime. BYOD is optional and never part of the default path."
+)
+
+
+def _declarations(template: dict[str, Any]) -> tuple[str, str, str]:
+    mode = template.get("mode", "GUIDED")
+    if mode not in MODES:
+        raise SystemExit(f"template mode {mode!r} is not one of {MODES}")
+    run_all = template.get("run_all") or _RUN_ALL_DEFAULT.get(template["profile"])
+    if not run_all:
+        raise SystemExit(f"template must state `run_all` for profile {template['profile']}")
+    return mode, run_all.strip(), (template.get("byod") or _BYOD_DEFAULT).strip()
+
 
 def render(repo: Path, template: dict[str, Any], revision: str | None = None) -> dict[str, Any]:
     ctx = load_context(repo, template, revision)
+    mode, run_all, byod = _declarations(template)
     stem = template["stem"]
     fmt = {"stem": stem, **{k: ctx[k] for k in ("MODEL_ID", "MODEL_REVISION", "MODEL_LICENSE", "MODEL_KEY")}}
     cells: list[dict[str, Any]] = []
@@ -336,13 +373,16 @@ def render(repo: Path, template: dict[str, Any], revision: str | None = None) ->
     header = (
         f"# {template['title']}\n\n{badges}\n\n"
         f"**Profile:** `{template['profile']}`  \n"
-        f"**Notebook specification:** DIMER Notebook Specification {NOTEBOOK_SPEC} — **standalone** (§3.6)  \n"
+        f"**Mode:** `{mode}`  \n"
+        f"**Notebook specification:** DIMER Notebook Specification {NOTEBOOK_SPEC} — **standalone** (§4)  \n"
         f"**Capability:** {template['capability']}\n\n"
         f"**This notebook is standalone.** It carries {carried}, the pinned model identity and the per-file SHA-256 manifest in Section 3, "
         f"and the exact runtime pins in Section 1, so it keeps working after export even if the repository changes or disappears. Its only "
         f"external dependencies are the pinned PyPI distributions and the Hugging Face Hub at the immutable revision `{ctx['MODEL_REVISION']}` "
         f"(~{total_mb:.0f} MB, digest-verified before loading). It was generated by `tools/build_notebook.py` ({GENERATOR_VERSION}); edit the "
         f"repository and regenerate rather than editing cells.\n\n"
+        f"**Run all:** {run_all}\n\n"
+        f"**Bring Your Own Data:** {byod}\n\n"
         f"{template['intro'].strip()}\n\n"
         f"**Learning objectives:** {template['learning_objectives'].strip()}\n\n"
         f"**This notebook does not demonstrate:** {template['exclusions'].strip()}"
@@ -473,6 +513,7 @@ def render(repo: Path, template: dict[str, Any], revision: str | None = None) ->
         "metadata": {
             "dimer": {
                 "notebook_profile": template["profile"],
+                "notebook_mode": mode,
                 "notebook_spec": NOTEBOOK_SPEC,
                 "standalone": True,
                 "generated_from": {
