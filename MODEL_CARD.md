@@ -1,16 +1,32 @@
 ---
 license: apache-2.0
-model_card_spec: "1.0"
+model_card_spec: "1.1"
 pipeline_tag: depth-estimation
 base_model: depth-anything/Depth-Anything-V2-Small-hf
 ---
 
-# Depth Anything V2 Small (DIMER package v0.1.0)
+# Depth Anything V2 Small (DIMER package v0.1.0) — Monocular Relative Depth Estimation
 
 [![Hugging Face](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-depth--anything%2FDepth--Anything--V2--Small--hf-ffcc4d?style=flat)](https://huggingface.co/depth-anything/Depth-Anything-V2-Small-hf)
-[![GitHub](https://img.shields.io/badge/GitHub-DepthAnything%2FDepth--Anything--V2-181717?style=flat&logo=github&logoColor=white)](https://github.com/DepthAnything/Depth-Anything-V2)
-[![arXiv](https://img.shields.io/badge/arXiv-2406.09414-b31b1b.svg)](https://arxiv.org/abs/2406.09414)
-[![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
+[![Upstream GitHub](https://img.shields.io/badge/Upstream%20GitHub-DepthAnything%2FDepth--Anything--V2-181717?style=flat&logo=github&logoColor=white)](https://github.com/DepthAnything/Depth-Anything-V2)
+[![arXiv Paper](https://img.shields.io/badge/arXiv-2406.09414-b31b1b.svg)](https://arxiv.org/abs/2406.09414)
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![Pipeline](https://img.shields.io/badge/Pipeline-depth--anything--depth--estimation--pipeline-2ea44f?style=flat&logo=github)](https://github.com/kurtvalcorza/depth-anything-depth-estimation-pipeline)
+
+> [!WARNING]
+> ⚠️ **Provided for research, training, and evaluation purposes only.** Model weights are redistributed unmodified under their upstream license, which controls your use, including any commercial use or redistribution; the accompanying code and notebooks are released under this repository's license. All of it is supplied **"as is"**, without warranty of any kind, and has not been validated for production, clinical, or safety-critical use. Running the notebooks downloads third-party weights and datasets governed by their own licenses and consumes compute on your own Colab/Kaggle account. To the maximum extent permitted by law, the maintainers of this repository and the DIMER platform accept no liability for any damages arising from their use. Hosting implies no affiliation with or endorsement by the original authors.
+
+---
+
+## Interactive Colab Tutorials
+
+This pipeline provides a ready-to-run interactive Google Colab notebook that exercises the repository's public API end to end — bootstrap a fresh runtime, resolve and verify the pinned upstream revision, validate an input, run the task, and inspect and export the outputs:
+
+- **Task Inference Tutorial**:  
+  [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/kurtvalcorza/depth-anything-depth-estimation-pipeline/blob/main/tutorials/depth_anything_depth_estimation_colab.ipynb) [`depth_anything_depth_estimation_colab.ipynb`](https://github.com/kurtvalcorza/depth-anything-depth-estimation-pipeline/blob/main/tutorials/depth_anything_depth_estimation_colab.ipynb)  
+  *Relative inverse-depth estimation from one RGB image through `DepthAnythingPipeline` with the pinned Depth Anything V2 Small weights — larger values are nearer, scale and shift are unknown, values are not metric; no adaptation occurs.*
+
+---
 
 ###### Description
 
@@ -53,7 +69,7 @@ Operating environment: Python 3.12 with `torch==2.14.0`, `transformers==4.57.6`,
 
 ###### Performance Measures
 
-The only measure the repository reports is `abs_rel(pred, ref_depth, align=True)`: absolute relative error, `mean(|est - ref| / ref)` over pixels with `ref_depth > 0`, after the prediction has been affinely aligned to `1 / ref_depth` by least squares and inverted to depth. It captures reconstruction error of the ordinal/affine depth structure and is the standard first metric in the monocular depth literature, which is why it was chosen over pixel-wise RMSE (dominated by far pixels) or threshold accuracies (which need a second convention). It requires caller-supplied metric ground truth; on unlabelled images the pipeline reports nothing, and it does not compute the upstream paper's benchmark numbers, which are not reproduced or claimed here.
+The only measure the repository reports is `abs_rel(pred, ref_depth, align=True)`: absolute relative error, `mean(|est - ref| / ref)` over pixels with `ref_depth > 0`, after the prediction has been affinely aligned to `1 / ref_depth` by least squares and inverted to depth. It captures reconstruction error of the ordinal/affine depth structure and is the standard first metric in the monocular depth literature, which is why it was chosen over pixel-wise RMSE (dominated by far pixels) or threshold accuracies (which need a second convention). It requires caller-supplied metric ground truth; on unlabelled images the pipeline reports nothing, and it does not compute the upstream paper's benchmark numbers, which are not reproduced or claimed here. The public `evaluation_report(result, reference_depth)` helper is the only reporting path: it emits a machine-readable report whose verdict is `sample-sanity` with `abs_rel` when a metric reference depth is supplied, and `not-measurable` otherwise, stating in that case what ground truth would make the task measurable.
 
 ###### Decision thresholds
 
@@ -78,7 +94,7 @@ This pipeline is not intended for decisions in health, safety, criminal justice,
 ###### Mitigations
 
 - **Supply-chain integrity:** `MODEL_REVISION` is a 40-hex commit; `verify_snapshot` compares the manifest's `modelId`/`revision` to the module constants and every listed file's byte size and SHA-256 to the manifest before any load; `from_pretrained` loads only from a verified local directory with `local_files_only=True`, falls back to the Hub only when `allow_download=True` is passed explicitly (still at `revision=MODEL_REVISION`), and always passes `trust_remote_code=False`. A test flips one hex digit of a manifest digest and asserts the loader refuses.
-- **Input integrity:** `validate_image` rejects non-PIL inputs, sub-14-px sides, sides over 4096 px, and aspect ratios over 4.0 before the model runs; `predict` raises if the backend returns a map whose shape differs from the input.
+- **Input integrity:** `validate_image` rejects non-PIL inputs, sub-14-px sides, sides over 4096 px, and aspect ratios over 4.0 before the model runs; `predict` raises if the backend returns a map whose shape differs from the input. The public `validate_inputs(images, names=...)` stage routes every image through that same `validate_image`, so it raises exactly what `predict` raises while returning a machine-readable input manifest of the schema, ceilings, per-input observations and verdict.
 - **Reproducibility:** exact `==` pins in `pyproject.toml`; every result carries `model_id` and `model_revision`.
 - **Refusals:** no metric conversion, no video path, and no download without the explicit flag; a snapshot with a mismatched revision raises rather than loading.
 - No statistical mitigation (class balancing, subsampling) applies: the model is a dense regressor with no classes.
