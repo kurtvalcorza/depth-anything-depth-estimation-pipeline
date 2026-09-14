@@ -64,7 +64,7 @@ The upstream training data comes from two instrument classes: rendered synthetic
 
 ###### Environment
 
-Operating environment: Python 3.12 with `torch==2.14.0`, `transformers==4.57.6`, `safetensors==0.8.0`, `numpy==2.5.3`, `pillow==11.3.0`. Inference runs in float32 on CUDA when available and on CPU otherwise; both paths were executed for this card (see Runtime). On an RTX 5070 Ti the 320x240 smoke image took 0.67 s cold and 0.024 s warm; peak allocated CUDA memory was 812 MiB for a 4096x1024 input and 298 MiB for 4096x4096, which is why `MAX_ASPECT_RATIO` is a ceiling: elongated inputs cost more backbone tokens than large square ones. Data environment: the model assumes a single ordinary photograph of a scene with perspective structure similar to the upstream synthetic and web-photo mix; outputs on fog, night, reflective or transparent surfaces, repetitive textures, and extreme close-ups are expected to degrade, and the pipeline reports no signal when they do.
+Operating environment: Python 3.12 with `torch==2.14.0`, `torchvision==0.29.0`, `torchaudio==2.11.0`, `transformers==4.57.6`, `safetensors==0.8.0`, `numpy==2.5.3`, `pillow==11.3.0`. Inference runs in float32 on CUDA when available and on CPU otherwise; both paths were executed for this card (see Runtime). On an RTX 5070 Ti the 320x240 smoke image took 0.67 s cold and 0.024 s warm; peak allocated CUDA memory was 812 MiB for a 4096x1024 input and 298 MiB for 4096x4096, which is why `MAX_ASPECT_RATIO` is a ceiling: elongated inputs cost more backbone tokens than large square ones. Data environment: the model assumes a single ordinary photograph of a scene with perspective structure similar to the upstream synthetic and web-photo mix; outputs on fog, night, reflective or transparent surfaces, repetitive textures, and extreme close-ups are expected to degrade, and the pipeline reports no signal when they do.
 
 #### Metrics
 
@@ -132,7 +132,7 @@ Prohibited even where the model would work: covert surveillance or tracking of p
 
 ## Runtime
 
-- Pins: `torch==2.14.0`, `transformers==4.57.6`, `safetensors==0.8.0`, `numpy==2.5.3`, `pillow==11.3.0`; Python 3.12.
+- Pins: `torch==2.14.0`, `torchvision==0.29.0`, `torchaudio==2.11.0`, `transformers==4.57.6`, `safetensors==0.8.0`, `numpy==2.5.3`, `pillow==11.3.0`; Python 3.12.
 - Measured 2026-09-12 in the Windows venv (`torch 2.14.0+cu130`, RTX 5070 Ti 16 GB, float32): `verify_snapshot` 0.09 s; load 5.70 s; `predict` on a synthetic 320x240 gradient image 0.668 s cold / 0.024 s warm, output `(240, 320)` float32, range 1.420–2.969; 4096x1024 input 0.31 s at 812 MiB peak allocated; 4096x4096 input 0.25 s at 298 MiB peak.
 - CPU path executed on the same machine: load 5.43 s, 320x240 predict 0.339 s cold / 0.246 s warm, range 1.420–2.970.
 - Not executed: Linux venv, half precision, batch inference, any accuracy measurement against ground truth.
