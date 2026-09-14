@@ -2,6 +2,7 @@
 license: apache-2.0
 model_card_spec: "1.1"
 pipeline_tag: depth-estimation
+task: "Depth Estimation"
 base_model: depth-anything/Depth-Anything-V2-Small-hf
 date_published: "2024-06-18"
 date_published_source: "Hugging Face Hub repository creation date of the exact hosted checkpoint (`createdAt`, https://huggingface.co/api/models/depth-anything/Depth-Anything-V2-Small-hf)"
