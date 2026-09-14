@@ -7,7 +7,7 @@ date_published: "2024-06-18"
 date_published_source: "Hugging Face Hub repository creation date of the exact hosted checkpoint (`createdAt`, https://huggingface.co/api/models/depth-anything/Depth-Anything-V2-Small-hf)"
 ---
 
-# Depth Anything V2 Small (DIMER package v0.1.0) — Monocular Relative Depth Estimation
+# Depth Anything V2 Small — Monocular Relative Depth Estimation
 
 [![Hugging Face](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-depth--anything%2FDepth--Anything--V2--Small--hf-ffcc4d?style=flat)](https://huggingface.co/depth-anything/Depth-Anything-V2-Small-hf)
 [![Upstream GitHub](https://img.shields.io/badge/Upstream%20GitHub-DepthAnything%2FDepth--Anything--V2-181717?style=flat&logo=github&logoColor=white)](https://github.com/DepthAnything/Depth-Anything-V2)
