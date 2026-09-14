@@ -106,4 +106,3 @@ they are measurements for the stated runtime, not general estimates.
 Clean-room execution evidence has been recorded on a fresh Kaggle Tesla T4 GPU runtime running top-to-bottom with no repository checkout (`kurtvalcorza/tut-depth-anything-verify` Version 11). All 9 code cells passed, model weights were staged and verified from Hugging Face Hub snapshot, and all 5 verification artifacts were generated and validated against schema.
 
 The pipeline tutorial notebook is verified and promoted to **Release-grade**.
-

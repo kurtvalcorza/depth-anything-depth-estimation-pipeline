@@ -3,6 +3,8 @@ license: apache-2.0
 model_card_spec: "1.1"
 pipeline_tag: depth-estimation
 base_model: depth-anything/Depth-Anything-V2-Small-hf
+date_published: "2024-06-18"
+date_published_source: "Hugging Face Hub repository creation date of the exact hosted checkpoint (`createdAt`, https://huggingface.co/api/models/depth-anything/Depth-Anything-V2-Small-hf)"
 ---
 
 # Depth Anything V2 Small (DIMER package v0.1.0) — Monocular Relative Depth Estimation
@@ -11,7 +13,6 @@ base_model: depth-anything/Depth-Anything-V2-Small-hf
 [![Upstream GitHub](https://img.shields.io/badge/Upstream%20GitHub-DepthAnything%2FDepth--Anything--V2-181717?style=flat&logo=github&logoColor=white)](https://github.com/DepthAnything/Depth-Anything-V2)
 [![arXiv Paper](https://img.shields.io/badge/arXiv-2406.09414-b31b1b.svg)](https://arxiv.org/abs/2406.09414)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Pipeline](https://img.shields.io/badge/Pipeline-depth--anything--depth--estimation--pipeline-2ea44f?style=flat&logo=github)](https://github.com/kurtvalcorza/depth-anything-depth-estimation-pipeline)
 
 > [!WARNING]
 > ⚠️ **Provided for research, training, and evaluation purposes only.** Model weights are redistributed unmodified under their upstream license, which controls your use, including any commercial use or redistribution; the accompanying code and notebooks are released under this repository's license. All of it is supplied **"as is"**, without warranty of any kind, and has not been validated for production, clinical, or safety-critical use. Running the notebooks downloads third-party weights and datasets governed by their own licenses and consumes compute on your own Colab/Kaggle account. To the maximum extent permitted by law, the maintainers of this repository and the DIMER platform accept no liability for any damages arising from their use. Hosting implies no affiliation with or endorsement by the original authors.
@@ -28,7 +29,7 @@ This pipeline provides a ready-to-run interactive Google Colab notebook that exe
 
 ---
 
-###### Description
+#### Description
 
 Depth Anything V2 Small is the smallest Transformers-format checkpoint of the Depth Anything V2 family, published as `depth-anything/Depth-Anything-V2-Small-hf` and pinned here to revision `5426e4f0f36572d16453bbda7a8389317b1bef99`. The snapshot `config.json` declares a `DepthAnythingForDepthEstimation` architecture: a DINOv2 ViT-S backbone (hidden size 384, patch size 14, four tapped stages) feeding a DPT-style reassemble/fusion neck (hidden sizes 48/96/192/384, fusion width 64) and a convolutional depth head. At inference the model reads one RGB image and emits a single-channel map of *relative inverse depth* — larger values are nearer — with no metric scale, and no adaptation happens at inference time. This repository adds nothing to the weights: it contributes `verify_snapshot` (manifest digest checking), `DepthAnythingPipeline.from_pretrained` (verified local loading with `trust_remote_code=False`), `predict` (input validation, resizing of the output back to the input resolution), the `abs_rel` helper for caller-supplied ground truth, and this card.
 
@@ -63,7 +64,7 @@ The upstream training data comes from two instrument classes: rendered synthetic
 
 ###### Environment
 
-Operating environment: Python 3.12 with `torch==2.14.0`, `transformers==4.57.6`, `safetensors==0.8.0`, `numpy==2.5.3`, `pillow==11.3.0`. Inference runs in float32 on CUDA when available and on CPU otherwise; both paths were executed for this card (see Runtime). On an RTX 5070 Ti the 320x240 smoke image took 0.67 s cold and 0.024 s warm; peak allocated CUDA memory was 812 MiB for a 4096x1024 input and 298 MiB for 4096x4096, which is why `MAX_ASPECT_RATIO` is a ceiling: elongated inputs cost more backbone tokens than large square ones. Data environment: the model assumes a single ordinary photograph of a scene with perspective structure similar to the upstream synthetic and web-photo mix; outputs on fog, night, reflective or transparent surfaces, repetitive textures, and extreme close-ups are expected to degrade, and the pipeline reports no signal when they do.
+Operating environment: Python 3.12 with `torch==2.14.0`, `torchvision==0.29.0`, `torchaudio==2.11.0`, `transformers==4.57.6`, `safetensors==0.8.0`, `numpy==2.5.3`, `pillow==11.3.0`. Inference runs in float32 on CUDA when available and on CPU otherwise; both paths were executed for this card (see Runtime). On an RTX 5070 Ti the 320x240 smoke image took 0.67 s cold and 0.024 s warm; peak allocated CUDA memory was 812 MiB for a 4096x1024 input and 298 MiB for 4096x4096, which is why `MAX_ASPECT_RATIO` is a ceiling: elongated inputs cost more backbone tokens than large square ones. Data environment: the model assumes a single ordinary photograph of a scene with perspective structure similar to the upstream synthetic and web-photo mix; outputs on fog, night, reflective or transparent surfaces, repetitive textures, and extreme close-ups are expected to degrade, and the pipeline reports no signal when they do.
 
 #### Metrics
 
@@ -131,7 +132,7 @@ Prohibited even where the model would work: covert surveillance or tracking of p
 
 ## Runtime
 
-- Pins: `torch==2.14.0`, `transformers==4.57.6`, `safetensors==0.8.0`, `numpy==2.5.3`, `pillow==11.3.0`; Python 3.12.
+- Pins: `torch==2.14.0`, `torchvision==0.29.0`, `torchaudio==2.11.0`, `transformers==4.57.6`, `safetensors==0.8.0`, `numpy==2.5.3`, `pillow==11.3.0`; Python 3.12.
 - Measured 2026-09-12 in the Windows venv (`torch 2.14.0+cu130`, RTX 5070 Ti 16 GB, float32): `verify_snapshot` 0.09 s; load 5.70 s; `predict` on a synthetic 320x240 gradient image 0.668 s cold / 0.024 s warm, output `(240, 320)` float32, range 1.420–2.969; 4096x1024 input 0.31 s at 812 MiB peak allocated; 4096x4096 input 0.25 s at 298 MiB peak.
 - CPU path executed on the same machine: load 5.43 s, 320x240 predict 0.339 s cold / 0.246 s warm, range 1.420–2.970.
 - Not executed: Linux venv, half precision, batch inference, any accuracy measurement against ground truth.
