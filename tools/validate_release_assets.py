@@ -77,7 +77,7 @@ CODE_MARKERS = (
     "pipe.save_artifact(artifact_dir, metadata=",
     "reloaded = DepthAnythingPipeline.from_artifact(artifact_dir, weights_dir=WEIGHTS_DIR, device=pipe.device)",
     "assert parity['depth_map_identical'] and abs(adapted_test['abs_rel'] - reloaded_test['abs_rel']) < 1e-9",
-    "weight_entry = next(entry for entry in snapshot['files'] if entry['path'] == WEIGHTS_FILE)",
+    "weight_entry = next(entry for entry in MANIFEST['files'] if entry['path'] == WEIGHTS_FILE)",
     "'weight_format': 'safetensors, digest-verified'",
     "'corpus': {'name': CORPUS_NAME, 'release': CORPUS_RELEASE, 'base_url': CORPUS_BASE_URL, 'commit': CORPUS_COMMIT",
     "'model_revision': MODEL_REVISION",
