@@ -98,7 +98,7 @@ Before changing the registry status from `Candidate` to `Release-grade`:
    - Section 4: `fetch_corpus` fetching the 120 pinned files (312,448,846 bytes) from the Hub mirror into
      `weights/diode-sample/`, 40 views of 20 scans read, and the seeded draw of 6 / 2 / 2 whole scans per domain into
      24 / 8 / 8 views with `check_split_disjoint` reporting no shared view and no shared scan, `scan_summary`
-     printed and the three dataset digests `__DIG_TRAIN__` / `__DIG_VAL__` / `__DIG_TEST__`; `outputs/…_train.csv`
+     printed and the three dataset digests `e7709c20…` / `ea60095b…` / `8f3bddbd…`; `outputs/…_train.csv`
      written; the four dataset refusal probes each raising `ValueError`;
    - Section 5: the ceilings (`MIN_IMAGE_SIDE` 14, `MAX_IMAGE_SIDE` 4096, `MAX_ASPECT_RATIO` 4.0) and the contract
      (`DEPTH_KIND` `relative`, `TRANSFORMER_BLOCKS` 12, `PARAMETER_COUNT` 24,785,089, `EVAL_DEPTH_RANGE_M`
@@ -141,7 +141,7 @@ A known-failing default path in the supported runtime blocks release (REL11).
 
 | Notebook | Commit / notebook blob | Date (UTC) | Executor | Outcome |
 |---|---|---|---|---|
-| `depth_anything_depth_estimation_colab.ipynb` (`E2E`) | `__LOCAL_ROW__` | 2026-09-19 | Local pre-flight harness (Windows, CPython 3.12.10, CPU, `google.colab` shim, pins pre-installed) | PASS — pre-flight only, **not** promotion evidence |
+| `depth_anything_depth_estimation_colab.ipynb` (`E2E`) | `d6d8ba6` / `a9fd58ef` | 2026-09-19 | Local pre-flight harness (Windows, CPython 3.12.10, CPU, `google.colab` shim, pins pre-installed) | PASS — pre-flight only, **not** promotion evidence |
 | `depth_anything_depth_estimation_colab.ipynb` (`TASK-INFERENCE`, superseded) | `a1b81b4` / `3ed3ea0` | 2026-09-13 | Kaggle Tesla T4 GPU (`kurtvalcorza/tut-depth-anything-verify` v11) | PASSED — `ok: True`, 9/9 code cells, 306 s (cells 39.8 s), live weights fetch, 5 artifacts verified (`evidence/release-verification-kaggle.json`); evidence for the earlier inference-only notebook, which it promoted to Release-grade — not for the `E2E` blob |
 
 ## Recorded executions
@@ -153,7 +153,7 @@ runtime, not general estimates.
 
 | Date (UTC) | Commit / notebook blob | Executor | Path exercised | Wall | Outcome |
 |---|---|---|---|---|---|
-| 2026-09-19 | `__LOCAL_ROW__` | Local pre-flight harness (Windows, CPython 3.12.10, CPU float32, `torch 2.14.0+cu130` with `CUDA_VISIBLE_DEVICES=-1`, `transformers 4.57.6`) | `__LOCAL_EXEC__` |
+| 2026-09-19 | `d6d8ba6` / `a9fd58ef` | Local pre-flight harness (Windows, CPython 3.12.10, CPU float32, `torch 2.14.0+cu130` with `CUDA_VISIBLE_DEVICES=-1`, `transformers 4.57.6`) | Default sample path (install skipped, pins pre-installed → three carried modules → inline manifest assert → `stage_missing_files` fetched 0 of 4 entries because the snapshot was pre-staged → `verify_snapshot` 4 files → `from_pretrained` on CPU → `fetch_corpus` served from the pre-staged cache after its 120 digest checks (1.0 s) → 40 views of 20 scans read, 24 / 8 / 8 drawn by whole scans with `check_split_disjoint` clean, 12 / 4 / 4 scans, digests `e7709c20…` / `ea60095b…` / `8f3bddbd…` → four dataset refusals → input manifest with the over-wide refusal → `predict` on `test-000` (outdoor, 0.37 s) with all four sanity checks `True` → `evaluation_report` **`sample-sanity`**, `abs_rel` 0.1212 over 703,835 reference pixels → constant prior → vertical-gradient prior → zero-shot `evaluate` → `adapt` ladder → validation + test evaluation → before/after maps + preview → adapter export → reload parity) | 118.3 s | **PASSED** — 11/11 code cells; constant prior 0.3346 / δ1 0.5564; vertical-gradient prior 0.2597 / 0.5828; zero-shot 0.1800 / 0.7644 (indoor 0.075, outdoor 0.285; 3.2 s); `adapt`: 2,728,513 neck-and-head + 3,550,464 block parameters, 5 epochs, 92.6 s, validation AbsRel 0.2426 (zero-shot) → 0.2201 → 0.1937 → 0.1394 → 0.1328 → 0.1295 with δ1 0.812 → 0.822 → 0.831 → 0.867 → 0.858 → 0.871, selected `unfrozen last 2 blocks + DPT neck and head` at `best_epoch` 5; **selected policy on the test split 0.1669 / δ1 0.7652 (Δ −0.0131 AbsRel, +0.0008 δ1 vs the checkpoint; indoor 0.0705, outdoor 0.2634)**; per view 0.121→0.164, 0.344→0.306, 0.404→0.359, 0.133→0.099, 0.271→0.224, 0.057→0.076, 0.071→0.073, 0.039→0.034 (three views worse); adapter 25,127,700 B / 100 tensors, SHA-256 `8545345c…`; reload parity exact (depth map identical, test AbsRel 0.166943 both ways); six exports written. Pre-flight; hosted clean-runtime run still required |
 | 2026-09-13 | `a1b81b4` / `3ed3ea0` (`TASK-INFERENCE`, superseded) | Kaggle Tesla T4 GPU (`kurtvalcorza/tut-depth-anything-verify` v11) | Default sample path of the inference-only notebook: `synthetic_ramp_320x240`, `stage_missing_files` fetching the four manifest entries from the Hub, `verify_snapshot` over 4 files, `predict` with its sanity checks, `not-measurable` report, depth `.npy` + preview PNG + JSON exports | 306 s (cells 39.8 s) | **PASSED** — `ok: True`, 9/9 code cells, 5 artifacts verified (`evidence/release-verification-kaggle.json`); history only |
 
 ## Current status
