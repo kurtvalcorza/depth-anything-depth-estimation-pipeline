@@ -572,7 +572,7 @@ SAMPLE_RECORDS: tuple[tuple[str, str, str, str, str, int, str, int, str, int, st
     ),
 )
 
-DEFAULT_CACHE_DIR = Path(__file__).resolve().parents[2] / "weights" / "diode-sample"
+DEFAULT_CACHE_DIR = Path("weights") / "diode-sample"  # working-directory-relative, like the notebook
 SAMPLE_SEED = 42
 SAMPLE_SPLIT = {"train": 6, "validation": 2, "test": 2}  # scans per domain; 2 domains x 2 views -> 24 / 8 / 8
 MIN_RECORDS = 4
