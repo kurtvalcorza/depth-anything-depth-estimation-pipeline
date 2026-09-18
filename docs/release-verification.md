@@ -1,108 +1,170 @@
 # Release verification
 
-`tutorials/depth_anything_depth_estimation_colab.ipynb` (`TASK-INFERENCE`) is a **release candidate** until
-the exact notebook revision has executed top-to-bottom in a clean supported runtime. Unit tests,
-JSON validation, code-cell compilation, and `tools/validate_release_assets.py` are necessary
-checks but are **not** runtime evidence under DIMER Notebook Specification 1.1. This file is
-the durable release-gate record for the notebook.
+`tutorials/depth_anything_depth_estimation_colab.ipynb` (`E2E`, **standalone** carrier) is a **release candidate** until
+the exact notebook revision has executed top-to-bottom in a clean supported runtime. Unit tests, JSON validation,
+code-cell compilation, the generator parity checks and `tools/validate_release_assets.py` are necessary checks but
+are **not** runtime evidence under DIMER Notebook Specification 2.0 (REL8). This file is the durable release-gate
+record for the notebook.
 
 ## Automatic coverage (static, every pull request)
 
 CI runs `tools/validate_release_assets.py`, which checks:
 
-- notebook JSON parses; every code cell compiles as plain Python (no `%`/`!` magics); no
-  persisted outputs or execution counts; no unresolved placeholder markers; every code cell
-  is preceded by an explanatory markdown cell;
-- exactly one tutorial notebook, named in `tutorials/README.md` with its `TASK-INFERENCE`
-  profile, the notebook-spec version and the standalone carrier; `metadata.dimer` declares that profile, spec `1.1`, `standalone: true` and `generated_from` (repository, generating revision, module SHA-256, generator);
-- the standalone carrier (ST1–ST6, PAR1–PAR3): no clone, repository install or repository import on the
-  primary path; exactly one cell tagged `embedded_module` equal to `src/depth_anything_depth_estimation_pipeline/pipeline.py`
-  after the generator's documented rewrites; the inline `MANIFEST` equal to the committed snapshot manifest and the
-  inline `PINS` equal to the `pyproject.toml` runtime pins; the notebook byte-identical to `tools/build_notebook.py`
-  output; the pinned-install cell with its restart-on-stale-import guard; `NOTEBOOK_SOURCE` recorded in the export;
-- `MODEL_ID`/`MODEL_REVISION` are bound only in the carried module cell (and repeated in the inline manifest,
-  which the notebook asserts against the module before fetching), the revision is a 40-hex immutable commit, and the
-  same identity string appears in `README.md`, `MODEL_CARD.md`, and `docs/WEIGHTS.md` with no stray revisions;
+- notebook JSON parses; every code cell compiles as plain Python (no `%`/`!` magics); no persisted outputs or
+  execution counts; no unresolved placeholder markers; every code cell is preceded by an explanatory markdown cell;
+- exactly one tutorial notebook, named in `tutorials/README.md` with its `E2E` profile, the notebook-spec version
+  and the standalone carrier; `metadata.dimer` declares that profile, spec `2.0`, a §3.3 pedagogical mode,
+  `standalone: true` and `generated_from` (repository, revision, module SHA-256, generator);
+- the standalone carrier (ST1–ST8, PAR1–PAR4): no clone, repository install or repository import on the primary
+  path; one cell per carried module (`pipeline.py`, `metrics.py`, `samples.py`), each equal to its source after the
+  generator's documented rewrites; the inline `MANIFEST` equal to the committed 3-entry snapshot manifest and the
+  inline `PINS` equal to the `pyproject.toml` runtime pins; the notebook byte-identical (on LF) to
+  `tools/build_notebook.py` output for its recorded revision; the pinned-install cell with its
+  restart-on-stale-import guard; `NOTEBOOK_SOURCE` recorded in exports;
+- `MODEL_ID`/`MODEL_REVISION` bound only in the carried module cell (and repeated in the inline manifest, which the
+  notebook asserts against the module before fetching), the revision a 40-hex immutable commit, and the same
+  identity string in `README.md`, `MODEL_CARD.md` and `docs/WEIGHTS.md` with no stray revisions (the 120 DIODE file
+  digests live in the carried `samples.py`, not in prose);
 - the profile-specific public-API calls (`stage_missing_files`, `verify_snapshot`,
-  `DepthAnythingPipeline.from_pretrained(weights_dir=...)`, `validate_inputs`, `predict`, `evaluation_report`), the
-  ceiling print (`MIN_IMAGE_SIDE`, `MAX_IMAGE_SIDE`, `MAX_ASPECT_RATIO`), the depth sanity checks, the five exported
-  files, the learner-facing depth statements (relative inverse depth, not metric, no confidence map, no threshold,
-  the `not-measurable`/`sample-sanity` verdicts) and the gated-off BYOD default listed in the validator; forbidden
-  patterns (credential-in-URL, any `git clone` / `github.com` / repository import on the primary path, a mutable
-  `revision='main'`, direct `from transformers import` / `AutoModelForDepthEstimation` / `AutoImageProcessor` /
-  `from huggingface_hub import` use **outside the carried module cell**, `trust_remote_code=True`, `pickle.load`,
-  `torch.load(`, `extractall(`);
-- `STATUS.md`, `README.md` and `tutorials/README.md` agree on one release-status token and no
-  document makes an unsupported release-grade, production-readiness or benchmark claim;
-- `MODEL_CARD.md` front matter, single H1, required heading order, and immutable provenance.
+  `DepthAnythingPipeline.from_pretrained(weights_dir=...)`, `fetch_corpus` from the pinned cache path,
+  `read_corpus` + `build_sample_dataset(seed=SPLIT_SEED)` / `load_byod_dataset`, `validate_dataset` per split,
+  `class_names`, `check_split_disjoint`, `observer_overlap`, `write_dataset_csv`, `validate_inputs` with the
+  over-wide-image refusal probe, `pipe.predict` with the sanity checks and the `sample-sanity` `evaluation_report`, `prior_baselines`,
+  `pipe.evaluate` on the untouched checkpoint with the two-prior assertion, `pipe.adapt` with
+  `trainable_blocks=TRAINABLE_BLOCKS`, `head_epochs=HEAD_EPOCHS` and `lr=LEARNING_RATE`, `pipe.evaluate` on the
+  validation and test splits after the ladder with the two-prior assertion, `aligned_abs_rel` on the before/after
+  maps, the preview PNG, `pipe.save_artifact`, `DepthAnythingPipeline.from_artifact` and the reload-parity
+  assertion, and the provenance fields `weight_format`, `weight_sha256` and the `corpus` block), the
+  six expected `outputs/` paths, the learner-facing statements (relative inverse depth, not metres, supervised
+  adaptation under an explicit policy ladder, the constant and vertical-gradient priors, the zero-shot, frozen and
+  unfrozen policies, lowest validation AbsRel, the `sample-sanity` report, no dispersion estimate, named
+  exclusions, the CC BY 4.0 licence) and the gated-off BYOD default; forbidden patterns (credential-in-URL, any `git
+  clone` / `github.com` / repository import on the primary path, a mutable `revision='main'`, direct
+  `from transformers import` / `from huggingface_hub import` / `urllib.request` / `safetensors` /
+  `torch.optim` / `.backward(` / `pipe._model` / `pipe._processor` / `predicted_depth` / `np.linalg.lstsq(` /
+  `AutoModelForDepthEstimation` / `AutoImageProcessor` use **outside the carried
+  module cells**, `trust_remote_code=True`, `pickle.load`, `torch.load(` without `weights_only=True`,
+  `extractall(`);
+- `STATUS.md`, `README.md` and `tutorials/README.md` agree on one release-status token and no document makes an
+  unsupported release-grade, production-readiness or benchmark claim;
+- `MODEL_CARD.md` front matter (`model_card_spec: "1.1"`), single H1, the 19 required headings in order, and the
+  immutable provenance section.
 
-CI also installs the pinned CPU-only `torch` wheel plus `transformers`, runs `ruff`, `tools/build_notebook.py --check`, and the
-offline unit suite (`tests/test_pipeline.py`, `tests/test_role_helpers.py`, `tests/test_notebook_parity.py`; injected runner, no weights). These are
-source/provenance and unit checks. They are **not** execution evidence.
+CI installs `numpy`, `pillow`, `pytest` and `ruff` only (no torch or transformers), runs `ruff check src tests tools`,
+`tools/build_notebook.py --check`, and the offline unit suite (`tests/test_pipeline.py`, `tests/test_adaptation.py`,
+`tests/test_role_helpers.py`, `tests/test_import_boundary.py`, `tests/test_notebook_parity.py`; injected
+vertical-gradient runner and corpus fetcher, synthetic RGB / depth / mask scenes, temporary manifests, no weights —
+`tests/test_model_backed.py` is skipped without `transformers` and the snapshot). These are source/provenance and
+unit checks. They are **not** execution evidence.
 
 ## Executor paths
 
 | Path | Runtime | Role |
 |---|---|---|
-| Google Colab (supported user path) | Colab CPU runtime (CUDA used automatically when present) | The runtime the tutorial is written for; a clean top-to-bottom run here is promotion evidence |
-| Kaggle CLI kernel | Kaggle CPU kernel, Python 3.12 image | Reproducible clean-room executor of the same class; the notebook is pushed verbatim plus one leading shim cell that provides `google.colab` and chdirs to a scratch directory (no repository checkout is needed — the notebook is standalone) |
-| Local WSL harness (pre-flight only) | Workstation, sequential cell executor with a `google.colab` shim | Builder pre-flight to catch defects before spending cloud runs; **not** a supported runtime and not promotion evidence |
+| Google Colab (supported user path) | Colab CPU runtime (CUDA used automatically when present; float32 either way) | The runtime the tutorial is written for; a clean top-to-bottom run here is promotion evidence |
+| Kaggle CLI kernel or equivalent fresh container | Fresh CPU or GPU container, Python 3.12 image; the committed notebook executed verbatim in a fresh interpreter with a `google.colab` shim and **no repository checkout** (the notebook is standalone) | Reproducible clean-room executor of the same class; needed whenever the hosted kernel pre-imports a NumPy, Pillow or torch that differs from the `pyproject.toml` pins, because the tutorial's fail-closed stale-import guard correctly halts the in-kernel path after the pinned install |
+| Local harness (pre-flight only) | Workstation, sequential cell executor with a `google.colab` shim, pre-staged pins, `CUDA_VISIBLE_DEVICES=-1` | Builder pre-flight to catch defects before spending cloud runs; **not** a supported runtime and **not** promotion evidence |
 
 ## Supported release verification procedure
 
 Before changing the registry status from `Candidate` to `Release-grade`:
 
 1. resolve the exact PR/commit head under review and confirm static CI is green;
-2. open that exact notebook revision in a new CPU (or CUDA) runtime (Colab, or the Kaggle
-   executor above) with **no repository checkout** and a clean model cache;
-3. run the notebook top-to-bottom without editing implementation cells (form parameters at their
-   defaults for the sample path: `USE_BYOD = False`, `reference_depth = None`);
+2. open that exact notebook revision in a new CPU or CUDA runtime (Colab, or a fresh-container executor above) with
+   **no repository checkout**, an empty Hugging Face cache, and no pre-staged files under the working-directory
+   snapshot `weights/depth-anything-v2-small/` or the corpus cache `weights/diode-sample/` (the standalone path writes the
+   manifest itself, stages the missing file from the Hub, and fetches the 120 pinned DIODE files from the
+   Hugging Face Hub mirror, so neither directory may be seeded);
+3. run the notebook top-to-bottom without editing implementation cells (form parameters at their defaults:
+   `USE_BYOD = False`, `SPLIT_SEED = 42`, `HEAD_EPOCHS = 2`, `EPOCHS = 3`, `LEARNING_RATE = 1e-5`,
+   `TRAINABLE_BLOCKS = 2`);
 4. verify that Section 1 reports `NOTEBOOK_SOURCE.repository_revision` equal to the revision recorded in
-   `metadata.dimer.generated_from` and that the installed core package versions equal the inline `PINS` (= `pyproject.toml`);
+   `metadata.dimer.generated_from` and that the installed core package versions equal the inline `PINS`
+   (= `pyproject.toml`): `torch==2.14.0`, `torchvision==0.29.0`, `transformers==4.57.6`, `huggingface-hub==0.36.2`,
+   `safetensors==0.8.0`, `numpy==2.5.3`, `pillow==11.3.0` (an interpreter restart after the install is expected
+   where the runtime's preinstalled torch, numpy or Pillow differ from the pins);
 5. verify every default-path stage completes:
    - pinned runtime installed from the inline `PINS` with no GitHub access;
-   - the carried module cell executes (defines the pipeline class and both role helpers) with no import of the
-     repository package;
-   - the synthetic 320 x 240 sample drawn in code with its pixel SHA-256 printed, and the ceilings
-     (`MIN_IMAGE_SIDE` 14, `MAX_IMAGE_SIDE` 4096, `MAX_ASPECT_RATIO` 4.0) surfaced before the model runs;
-   - pinned `depth-anything/Depth-Anything-V2-Small-hf` acquisition at the immutable revision through the package:
-     the inline `MANIFEST` is asserted against the module identity and written to `weights/depth-anything-v2-small/`,
-     `stage_missing_files(WEIGHTS_DIR, allow_download=True)` reports all four manifest entries
-     (`README.md`, `config.json`, `model.safetensors`, `preprocessor_config.json`) on a clean runtime,
-     `verify_snapshot` reports `files: 4` with the pinned revision, and `from_pretrained(weights_dir=WEIGHTS_DIR)`
-     loads with `local_files_only=True`;
-   - `validate_inputs` writes `outputs/depth_anything_depth_estimation_input_manifest.json` (verdict `accepted`, one
-     recorded rejection finding from the over-wide probe);
-   - depth estimation through `predict(image)` with `depth_kind == 'relative'`, the shape equal to the input, and all
-     four sanity checks true;
-   - `evaluation_report` writes `outputs/depth_anything_depth_estimation_evaluation_report.json` with verdict
-     `not-measurable` on the synthetic sample (no reference depth), stated as such;
-   - the side-by-side preview renders, and `outputs/depth_anything_depth_estimation_depth.npy`,
-     `..._preview.png` and `..._result.json` are written with `NOTEBOOK_SOURCE`, model revision, model licence,
-     runtime versions and device;
+   - the three carried module cells execute (defining `DepthAnythingPipeline`, `verify_snapshot`,
+     `stage_missing_files`, `validate_inputs`, `evaluation_report`, `abs_rel`, `align_inverse_depth`,
+     `aligned_abs_rel`, `depth_metrics`, `prior_baselines`, `SAMPLE_RECORDS`, `fetch_corpus`, `read_corpus`,
+     `build_sample_dataset`, `validate_dataset`, `check_split_disjoint`, `scan_summary`, `split_dataset`,
+     `load_byod_dataset`, `write_dataset_csv` and the ceilings) with no import of the repository package;
+   - the inline manifest asserted against the module's constants, then `stage_missing_files(WEIGHTS_DIR,
+     allow_download=True)` reporting `['model.safetensors']` (and any other absent entry) fetched from
+     `depth-anything/Depth-Anything-V2-Small-hf` at the immutable revision, and `verify_snapshot` returning its dict
+     (4 files); `from_pretrained(weights_dir=WEIGHTS_DIR)` loading from the verified directory with `source`
+     `local-snapshot`;
+   - Section 4: `fetch_corpus` fetching the 120 pinned files (312,448,846 bytes) from the Hub mirror into
+     `weights/diode-sample/`, 40 views of 20 scans read, and the seeded draw of 6 / 2 / 2 whole scans per domain into
+     24 / 8 / 8 views with `check_split_disjoint` reporting no shared view and no shared scan, `scan_summary`
+     printed and the three dataset digests `__DIG_TRAIN__` / `__DIG_VAL__` / `__DIG_TEST__`; `outputs/…_train.csv`
+     written; the four dataset refusal probes each raising `ValueError`;
+   - Section 5: the ceilings (`MIN_IMAGE_SIDE` 14, `MAX_IMAGE_SIDE` 4096, `MAX_ASPECT_RATIO` 4.0) and the contract
+     (`DEPTH_KIND` `relative`, `TRANSFORMER_BLOCKS` 12, `PARAMETER_COUNT` 24,785,089, `EVAL_DEPTH_RANGE_M`
+     (0.6, 350.0)) surfaced; `validate_inputs` writing `outputs/…_input_manifest.json` (verdict `accepted`, one
+     recorded rejection finding from the over-wide probe); `predict` on one test view with all four sanity checks
+     `True`; `evaluation_report` against the view's masked metric reference with verdict **`sample-sanity`** and an
+     `abs_rel` metric (≈ 0.12 on the recorded outdoor probe view); the side-by-side preview displayed;
+   - Section 6: the constant prior (≈ 0.335 AbsRel) and the vertical-gradient prior (≈ 0.260) on the 8 test views,
+     then `pipe.evaluate` on the untouched checkpoint (≈ 0.180 AbsRel, ≈ 0.764 δ1; indoor ≈ 0.075, outdoor
+     ≈ 0.285) with per-view rows, two zero-shot maps kept, and the cell's assertion that the checkpoint beats both
+     priors;
+   - Section 7: `pipe.adapt` printing epoch 0 as the zero-shot checkpoint on validation (AbsRel ≈ 0.243), then
+     2 neck-and-head epochs (2,728,513 trainable parameters) and 3 unfreeze epochs of the last two blocks
+     (+ 3,550,464 of 24,785,089 parameters) with validation AbsRel / δ1 each epoch (0.243 → 0.220 → 0.194 →
+     0.139 → 0.133 → 0.130 in the recorded run) and the selected policy `unfrozen last 2 blocks + DPT neck and
+     head` (`best_epoch` 5);
+   - Section 8: `pipe.evaluate` on the validation and test splits with the four-way comparison, per-domain and
+     per-view AbsRel, and `outputs/…_evaluation_report.json` written (the cell asserts the selected model beats
+     both priors — on the sample ≈ 0.167 versus 0.335 and 0.260; the delta over the checkpoint, −0.013 AbsRel, is
+     reported, not asserted);
+   - Section 9: two test views predicted by the selected model and rendered beside their zero-shot maps with
+     per-view `aligned_abs_rel`, `outputs/…_preview.png` written; `pipe.save_artifact` writing
+     `outputs/…_adapter/{adapter.safetensors, manifest.json}` (100 tensors, about 25.1 MB with two trained blocks —
+     78 tensors, 10.9 MB when the neck-and-head policy is selected; `policy` recorded) and
+     `DepthAnythingPipeline.from_artifact` reloading it with an identical depth map on a test view and an identical
+     test AbsRel (the cell asserts both); `outputs/…_result.json` written with `NOTEBOOK_SOURCE`, the model identity
+     and licence, the snapshot block (`weight_format`, `weight_sha256`), the `corpus` block, the inference-contract
+     items with the single-view report, the comparison, the before/after rows, the artifact digest and policy, the
+     reload parity, the runtime versions and device;
 6. verify the exports exist and the interpretation section matches the observed path;
-7. record the notebook Git blob id, commit, runtime (platform, Python, PyTorch, Transformers, device),
-   model identifier and immutable revision, whether the model cache was clean, outcome, produced
-   outputs, and any warning or applicable `SHOULD` deviation in the table below;
+7. record the notebook Git blob id, commit, runtime (platform, Python, PyTorch, Transformers, device), the model identifier
+   and immutable revision, whether the model cache, the weights directory and the corpus cache were clean, outcome,
+   produced outputs, the observed metrics and the selected policy (as observations, not a benchmark) and any warning
+   or applicable `SHOULD` deviation in the tables below;
 8. record no access tokens or other secrets.
 
-A known-failing default path in the supported runtime blocks release.
+A known-failing default path in the supported runtime blocks release (REL11).
+
+## Manual clean-runtime evidence
+
+| Notebook | Commit / notebook blob | Date (UTC) | Executor | Outcome |
+|---|---|---|---|---|
+| `depth_anything_depth_estimation_colab.ipynb` (`E2E`) | `__LOCAL_ROW__` | 2026-09-19 | Local pre-flight harness (Windows, CPython 3.12.10, CPU, `google.colab` shim, pins pre-installed) | PASS — pre-flight only, **not** promotion evidence |
+| `depth_anything_depth_estimation_colab.ipynb` (`TASK-INFERENCE`, superseded) | `a1b81b4` / `3ed3ea0` | 2026-09-13 | Kaggle Tesla T4 GPU (`kurtvalcorza/tut-depth-anything-verify` v11) | PASSED — `ok: True`, 9/9 code cells, 306 s (cells 39.8 s), live weights fetch, 5 artifacts verified (`evidence/release-verification-kaggle.json`); evidence for the earlier inference-only notebook, which it promoted to Release-grade — not for the `E2E` blob |
 
 ## Recorded executions
 
 Notebook identity is the Git blob id of `tutorials/depth_anything_depth_estimation_colab.ipynb` (verify with
-`git rev-parse <commit>:tutorials/depth_anything_depth_estimation_colab.ipynb`). Wall times, when recorded,
-are the sum of per-cell times reported by the executor and include installs and the model download;
-they are measurements for the stated runtime, not general estimates.
-
-### Manual clean-runtime evidence
+`git rev-parse <commit>:tutorials/depth_anything_depth_estimation_colab.ipynb`). Wall times are the sum of per-cell times
+reported by the executor and include the model download where it occurred; they are measurements for the stated
+runtime, not general estimates.
 
 | Date (UTC) | Commit / notebook blob | Executor | Path exercised | Wall | Outcome |
 |---|---|---|---|---|---|
-| 2026-09-13 | `a1b81b4` / `3ed3ea0` | Kaggle Tesla T4 GPU (`kurtvalcorza/tut-depth-anything-verify` v11) | Default sample path (`synthetic_ramp_320x240`, live weights fetch, standalone carrier) | 306s (cells: 39.8s) | **PASSED** — `ok: True`, 9/9 code cells executed cleanly, all 5 output artifacts verified (`evidence/release-verification-kaggle.json`) |
+| 2026-09-19 | `__LOCAL_ROW__` | Local pre-flight harness (Windows, CPython 3.12.10, CPU float32, `torch 2.14.0+cu130` with `CUDA_VISIBLE_DEVICES=-1`, `transformers 4.57.6`) | `__LOCAL_EXEC__` |
+| 2026-09-13 | `a1b81b4` / `3ed3ea0` (`TASK-INFERENCE`, superseded) | Kaggle Tesla T4 GPU (`kurtvalcorza/tut-depth-anything-verify` v11) | Default sample path of the inference-only notebook: `synthetic_ramp_320x240`, `stage_missing_files` fetching the four manifest entries from the Hub, `verify_snapshot` over 4 files, `predict` with its sanity checks, `not-measurable` report, depth `.npy` + preview PNG + JSON exports | 306 s (cells 39.8 s) | **PASSED** — `ok: True`, 9/9 code cells, 5 artifacts verified (`evidence/release-verification-kaggle.json`); history only |
 
 ## Current status
 
-Clean-room execution evidence has been recorded on a fresh Kaggle Tesla T4 GPU runtime running top-to-bottom with no repository checkout (`kurtvalcorza/tut-depth-anything-verify` Version 11). All 9 code cells passed, model weights were staged and verified from Hugging Face Hub snapshot, and all 5 verification artifacts were generated and validated against schema.
-
-The pipeline tutorial notebook is verified and promoted to **Release-grade**.
+The `E2E` notebook source is complete and passes all static checks, including the generator parity checks
+(`--check` OK). A local pre-flight execution of the committed blob completed the whole default path on CPU —
+DIODE views read from the cache, validation and scan-level split, the inference contract with a `sample-sanity`
+report, the two priors, the zero-shot policy, the neck-and-head and unfreeze policies with validation selection,
+held-out evaluation, before/after depth maps, adapter export and reload parity — which catches defects but is
+**not** a supported runtime under REL1/REL10, and it ran with the snapshot and the 120 DIODE files pre-staged, so
+neither the 99 MB Hub fetch nor the 312 MB corpus download has been exercised by this notebook end to end; the
+earlier `TASK-INFERENCE` Kaggle T4 run did exercise the Hub fetch and digest check of the same snapshot. Because the
+notebook blob has changed, the repository steps back from **Release-grade** to **Candidate** until a Colab or
+fresh-container run of the exact `E2E` release revision is recorded above.
