@@ -53,6 +53,8 @@ ADAPTER_PREFIXES = ("neck.", "head.")
 BLOCK_PREFIX = "backbone.encoder.layer."
 POLICY_ZERO_SHOT = "zero-shot (no adaptation)"
 POLICY_FROZEN = "frozen backbone + DPT neck and head"
+POLICY_UNFROZEN = "unfrozen last {k} blocks + DPT neck and head"
+MIN_VALID_TARGET_PIXELS = 2  # the affine alignment inside the loss needs at least two valid pixels
 MAX_EVAL_RECORDS = 2_000
 MIN_SCORED_RECORDS = 20  # below this a scored dataset is labelled a small sample
 ARTIFACT_FORMAT = "org.valcorza.depth-anything-v2-small.adapter.v1"
@@ -422,6 +424,11 @@ class DepthAnythingPipeline:
         depth = torch.nn.functional.interpolate(depth, size=size, mode="nearest")[0, 0]
         valid = torch.nn.functional.interpolate(mask, size=size, mode="nearest")[0, 0] > 0.5
         valid &= depth > 0
+        if int(valid.sum()) < MIN_VALID_TARGET_PIXELS:
+            raise ValueError(
+                f"record {record.get('id', '?')!r} keeps {int(valid.sum())} valid pixels at the working "
+                f"resolution; at least {MIN_VALID_TARGET_PIXELS} are needed for the affine alignment"
+            )
         return (1.0 / depth.clamp_min(1e-6)).to(device), valid.to(device)
 
     @staticmethod
@@ -508,49 +515,66 @@ class DepthAnythingPipeline:
         best_state = {n: params[n].detach().clone() for n in names_b}
         stages: list[tuple[str, list[str], int]] = [(POLICY_FROZEN, names_a, head_epochs)]
         if trainable_blocks > 0 and epochs > 0:
-            stages.append((f"unfrozen last {trainable_blocks} blocks + DPT neck and head", names_b, epochs))
+            stages.append((POLICY_UNFROZEN.format(k=trainable_blocks), names_b, epochs))
         torch.manual_seed(seed)
         rng = random.Random(seed)
         epoch = 0
-        for stage, names, n_epochs in stages:
-            if n_epochs == 0:
-                continue
+        initial_state = {n: v.clone() for n, v in best_state.items()}
+        try:
+            for stage, names, n_epochs in stages:
+                if n_epochs == 0:
+                    continue
+                for p in model.parameters():
+                    p.requires_grad_(False)
+                for n in names:
+                    params[n].requires_grad_(True)
+                optimiser = torch.optim.AdamW([params[n] for n in names], lr=float(lr), weight_decay=0.01)
+                for _ in range(n_epochs):
+                    epoch += 1
+                    model.train()
+                    order = list(range(len(train_records)))
+                    rng.shuffle(order)
+                    losses = []
+                    for index in order:
+                        record = train_records[index]
+                        pixel_values = processor(images=record["image"], return_tensors="pt")["pixel_values"]
+                        pred = model(pixel_values=pixel_values.to(self.device)).predicted_depth[0]
+                        target, valid = self._targets(record, tuple(pred.shape), self.device)
+                        loss = self._ssi_loss(pred.float(), target, valid)
+                        if not torch.isfinite(loss):
+                            raise RuntimeError(
+                                f"non-finite loss on record {record['id']!r}; adaptation aborted"
+                            )
+                        optimiser.zero_grad(set_to_none=True)
+                        loss.backward()
+                        torch.nn.utils.clip_grad_norm_([params[n] for n in names], 1.0)
+                        optimiser.step()
+                        losses.append(float(loss.detach()))
+                    val_metrics = score()
+                    entry = {
+                        "epoch": epoch,
+                        "stage": stage,
+                        "train_loss": float(np.mean(losses)),
+                        "val": val_metrics,
+                    }
+                    history.append(entry)
+                    if progress is not None:
+                        progress(entry)
+                    current = val_metrics["abs_rel"] if val_metrics else -epoch  # no val: the last epoch wins
+                    if current < best_score:
+                        best_epoch, best_score = epoch, current
+                        best_state = {n: params[n].detach().clone() for n in names_b}
+        except BaseException:
+            # Transactional: a failure in training, validation or the progress callback leaves the base
+            # exactly as it was, frozen, with no adapter attached.
+            with torch.no_grad():
+                for n, value in initial_state.items():
+                    params[n].copy_(value)
             for p in model.parameters():
                 p.requires_grad_(False)
-            for n in names:
-                params[n].requires_grad_(True)
-            optimiser = torch.optim.AdamW([params[n] for n in names], lr=float(lr), weight_decay=0.01)
-            for _ in range(n_epochs):
-                epoch += 1
-                model.train()
-                order = list(range(len(train_records)))
-                rng.shuffle(order)
-                losses = []
-                for index in order:
-                    record = train_records[index]
-                    pixel_values = processor(images=record["image"], return_tensors="pt")["pixel_values"]
-                    pred = model(pixel_values=pixel_values.to(self.device)).predicted_depth[0]
-                    target, valid = self._targets(record, tuple(pred.shape), self.device)
-                    loss = self._ssi_loss(pred.float(), target, valid)
-                    optimiser.zero_grad(set_to_none=True)
-                    loss.backward()
-                    torch.nn.utils.clip_grad_norm_([params[n] for n in names], 1.0)
-                    optimiser.step()
-                    losses.append(float(loss.detach()))
-                val_metrics = score()
-                entry = {
-                    "epoch": epoch,
-                    "stage": stage,
-                    "train_loss": float(np.mean(losses)),
-                    "val": val_metrics,
-                }
-                history.append(entry)
-                if progress is not None:
-                    progress(entry)
-                current = val_metrics["abs_rel"] if val_metrics else -epoch  # no val: the last epoch wins
-                if current < best_score:
-                    best_epoch, best_score = epoch, current
-                    best_state = {n: params[n].detach().clone() for n in names_b}
+            model.eval()
+            self.adapter = None
+            raise
         with torch.no_grad():
             for n, value in best_state.items():
                 params[n].copy_(value)
@@ -607,6 +631,13 @@ class DepthAnythingPipeline:
                 "weight_sha256": WEIGHT_SHA256,
             },
             "adapter": {k: v for k, v in self.adapter.items() if k not in ("history", "trainable_names")},
+            "no_op": self.adapter["policy"] == POLICY_ZERO_SHOT,
+            "note": (
+                "the zero-shot policy was selected: the neck and head tensors below are byte copies of the "
+                "base and loading this artifact changes nothing"
+                if self.adapter["policy"] == POLICY_ZERO_SHOT
+                else "the neck and head tensors, plus the trained backbone blocks under the unfrozen policy"
+            ),
             "history": self.adapter.get("history", []),
             "tensors": sorted(tensors),
             "files": [
@@ -623,12 +654,20 @@ class DepthAnythingPipeline:
         )
         return out
 
-    def load_artifact(self, artifact_dir: str | Path) -> dict[str, Any]:
-        """Verify an adapter's manifest and digest **before** deserialising, then overlay its tensors."""
-        root = Path(artifact_dir)
-        manifest = json.loads((root / ARTIFACT_MANIFEST_NAME).read_text(encoding="utf-8"))
+    def _check_artifact_manifest(self, root: Path, manifest: Mapping[str, Any]) -> tuple[Path, str, int]:
+        """Refuse an artifact whose manifest is not exactly the one this pipeline writes: the supported format
+        and version, the pinned base (id, revision, weight file, digest), exactly one file entry named
+        `adapter.safetensors` that resolves inside the artifact directory, a canonical policy and an integer
+        `trainable_blocks` in range. Nothing is deserialised here. The digest check that follows detects
+        corruption or drift of the weights relative to the adjacent manifest; it is not authenticity against
+        an actor who can replace both files."""
         if manifest.get("format") != ARTIFACT_FORMAT:
             raise ValueError(f"artifact format {manifest.get('format')!r} != {ARTIFACT_FORMAT!r}")
+        if manifest.get("format_version") != ARTIFACT_FORMAT_VERSION:
+            raise ValueError(
+                f"artifact format_version {manifest.get('format_version')!r} is not the supported "
+                f"{ARTIFACT_FORMAT_VERSION!r}"
+            )
         base = manifest.get("base_model", {})
         if (base.get("id"), base.get("revision"), base.get("weight_sha256")) != (
             MODEL_ID,
@@ -636,20 +675,64 @@ class DepthAnythingPipeline:
             WEIGHT_SHA256,
         ):
             raise ValueError("artifact was adapted from a different base model, revision or weight file")
+        if base.get("weight_file", WEIGHTS_FILE) != WEIGHTS_FILE:
+            raise ValueError("artifact was adapted from a different base weight file")
+        files = manifest.get("files")
+        if not isinstance(files, list) or len(files) != 1:
+            raise ValueError("artifact manifest must list exactly one file")
+        entry = files[0]
+        if not isinstance(entry, Mapping) or entry.get("path") != ARTIFACT_WEIGHTS_NAME:
+            raise ValueError(f"artifact manifest must name exactly {ARTIFACT_WEIGHTS_NAME!r}")
+        weights_path = (root / entry["path"]).resolve()
+        if weights_path.parent != root.resolve():
+            raise ValueError("artifact weight path must resolve inside the artifact directory")
+        adapter = manifest.get("adapter")
+        if not isinstance(adapter, Mapping):
+            raise ValueError("artifact manifest has no adapter block")
+        blocks = adapter.get("trainable_blocks")
+        if isinstance(blocks, bool) or not isinstance(blocks, int) or not 0 <= blocks <= TRANSFORMER_BLOCKS:
+            raise ValueError(
+                f"artifact manifest does not record an integer trainable_blocks in 0..{TRANSFORMER_BLOCKS}"
+            )
+        policy = adapter.get("policy")
+        if policy in (POLICY_ZERO_SHOT, POLICY_FROZEN):
+            blocks = 0
+        elif policy != POLICY_UNFROZEN.format(k=blocks) or blocks == 0:
+            raise ValueError(
+                f"artifact policy {policy!r} is not a canonical policy for trainable_blocks={blocks}"
+            )
+        if not isinstance(manifest.get("tensors"), list):
+            raise ValueError("artifact manifest must list its tensors")
+        return weights_path, policy, blocks
+
+    def load_artifact(self, artifact_dir: str | Path) -> dict[str, Any]:
+        """Verify an adapter's manifest, digest and exact tensor set **before** deserialising, then overlay
+        its tensors (a zero-shot artifact must equal the base and changes nothing)."""
+        root = Path(artifact_dir)
+        manifest = json.loads((root / ARTIFACT_MANIFEST_NAME).read_text(encoding="utf-8"))
+        weights_path, policy, blocks = self._check_artifact_manifest(root, manifest)
         entry = manifest["files"][0]
-        weights_path = root / entry["path"]
         if not weights_path.is_file():
             raise FileNotFoundError(f"artifact weights missing: {weights_path}")
         if _sha256(weights_path) != entry["sha256"] or weights_path.stat().st_size != entry["bytes"]:
             raise ValueError(f"{entry['path']}: digest or size mismatch; refusing to load")
+        # The exact tensor set the recorded policy implies: neck and head always, the last `blocks` blocks
+        # only under the unfrozen policy.
+        expected = sorted(self._trainable_names(blocks))
+        if sorted(manifest["tensors"]) != expected:
+            raise ValueError("artifact tensor list does not match its recorded policy and trainable_blocks")
         model, _ = self._require_model()
         import torch
         from safetensors.torch import load_file
 
         tensors = load_file(str(weights_path))
-        if sorted(tensors) != manifest["tensors"]:
+        if sorted(tensors) != expected:
             raise ValueError("artifact tensor names differ from its manifest")
         state = model.state_dict()
+        if policy == POLICY_ZERO_SHOT and any(
+            not torch.equal(value.to(state[key].dtype), state[key].cpu()) for key, value in tensors.items()
+        ):
+            raise ValueError("artifact claims the zero-shot policy but its tensors differ from the base")
         for key, value in tensors.items():
             if key not in state or not key.startswith((*ADAPTER_PREFIXES, BLOCK_PREFIX)):
                 raise ValueError(

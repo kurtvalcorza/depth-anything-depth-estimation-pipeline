@@ -386,9 +386,10 @@ def test_load_artifact_rejects_bad_manifests_before_touching_weights(tmp_path, f
     manifest = {
         "format": ARTIFACT_FORMAT,
         "base_model": {"id": MODEL_ID, "revision": MODEL_REVISION, "weight_sha256": pl.WEIGHT_SHA256},
+        "format_version": pl.ARTIFACT_FORMAT_VERSION,
         "files": [{"path": pl.ARTIFACT_WEIGHTS_NAME, "bytes": 1, "sha256": "0" * 64}],
         "tensors": ["head.conv1.weight", "neck.fusion_stage.layers.0.projection.weight"],
-        "adapter": {"policy": pl.POLICY_FROZEN},
+        "adapter": {"policy": pl.POLICY_FROZEN, "trainable_blocks": 2},
     }
     (tmp_path / pl.ARTIFACT_MANIFEST_NAME).write_text(json.dumps({**manifest, "format": "other"}))
     with pytest.raises(ValueError, match="artifact format"):
@@ -403,3 +404,62 @@ def test_load_artifact_rejects_bad_manifests_before_touching_weights(tmp_path, f
     (tmp_path / pl.ARTIFACT_WEIGHTS_NAME).write_bytes(b"x")
     with pytest.raises(ValueError, match="digest or size mismatch"):
         pipe.load_artifact(tmp_path)
+
+
+def test_load_artifact_refuses_unsupported_versions_extra_files_traversal_and_policies(
+    tmp_path, forbid_model_imports
+):
+    pipe = _pipeline_without_model()
+    good = {
+        "format": ARTIFACT_FORMAT,
+        "format_version": pl.ARTIFACT_FORMAT_VERSION,
+        "base_model": {"id": MODEL_ID, "revision": MODEL_REVISION, "weight_sha256": pl.WEIGHT_SHA256},
+        "files": [{"path": pl.ARTIFACT_WEIGHTS_NAME, "bytes": 1, "sha256": "0" * 64}],
+        "tensors": ["head.conv1.weight"],
+        "adapter": {"policy": pl.POLICY_FROZEN, "trainable_blocks": 2},
+    }
+
+    def write(manifest):
+        (tmp_path / pl.ARTIFACT_MANIFEST_NAME).write_text(json.dumps(manifest))
+
+    write({**good, "format_version": "0.9"})
+    with pytest.raises(ValueError, match="format_version"):
+        pipe.load_artifact(tmp_path)
+    write({**good, "files": good["files"] * 2})
+    with pytest.raises(ValueError, match="exactly one file"):
+        pipe.load_artifact(tmp_path)
+    write({**good, "files": [{**good["files"][0], "path": "../" + pl.ARTIFACT_WEIGHTS_NAME}]})
+    with pytest.raises(ValueError, match="must name exactly|inside the artifact directory"):
+        pipe.load_artifact(tmp_path)
+    write({**good, "base_model": {**good["base_model"], "weight_file": "pytorch_model.bin"}})
+    with pytest.raises(ValueError, match="different base weight file"):
+        pipe.load_artifact(tmp_path)
+    write({**good, "adapter": {**good["adapter"], "policy": "something else"}})
+    with pytest.raises(ValueError, match="not a canonical policy"):
+        pipe.load_artifact(tmp_path)
+    write({**good, "adapter": {"policy": pl.POLICY_UNFROZEN.format(k=3), "trainable_blocks": 2}})
+    with pytest.raises(ValueError, match="not a canonical policy"):
+        pipe.load_artifact(tmp_path)
+    write({**good, "adapter": {**good["adapter"], "trainable_blocks": 99}})
+    with pytest.raises(ValueError, match="trainable_blocks"):
+        pipe.load_artifact(tmp_path)
+    write(good)  # every manifest check passes; the weights file is still missing, and no model was imported
+    with pytest.raises(FileNotFoundError, match="artifact weights missing"):
+        pipe.load_artifact(tmp_path)
+
+
+def test_targets_reject_a_sparse_mask():
+    import numpy as np
+    import torch
+
+    record = {
+        "id": "sparse",
+        "depth": np.ones((8, 8), dtype=np.float32),
+        "mask": np.zeros((8, 8), dtype=np.float32),
+    }
+    record["mask"][0, 0] = 1.0
+    with pytest.raises(ValueError, match="valid pixels"):
+        pl.DepthAnythingPipeline._targets(record, (8, 8), "cpu")
+    record["mask"][0, 1] = 1.0
+    target, valid = pl.DepthAnythingPipeline._targets(record, (8, 8), "cpu")
+    assert int(valid.sum()) == 2 and bool(torch.isfinite(target).all())
