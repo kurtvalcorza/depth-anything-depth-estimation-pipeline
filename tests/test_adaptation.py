@@ -450,7 +450,8 @@ def test_load_artifact_refuses_unsupported_versions_extra_files_traversal_and_po
 
 def test_targets_reject_a_sparse_mask():
     import numpy as np
-    import torch
+
+    torch = pytest.importorskip("torch")
 
     record = {
         "id": "sparse",
