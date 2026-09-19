@@ -905,10 +905,12 @@ def split_dataset(
     return splits
 
 
-def load_byod_dataset(path: str | Path) -> list[dict[str, Any]]:
+def load_byod_dataset(path: str | Path, *, require_group: bool = True) -> list[dict[str, Any]]:
     """Read `{id, image, depth[, mask]}` records from a directory or a zip holding `records.csv` (columns
-    `id`, `image`, `depth`, optional `mask` and `group`) beside the files; depth and mask are `.npy` arrays
-    (metres; boolean) decoded from the archive, never extracted to disk."""
+    `id`, `image`, `depth`, `group`, optional `mask`) beside the files; depth and mask are `.npy` arrays
+    (metres; boolean) decoded from the archive, never extracted to disk. `group` (the scan, capture session
+    or device the view belongs to) must be non-empty on every row unless `require_group=False`, in which
+    case the split falls back to one unit per view and the group-disjoint guarantee is gone."""
     source = Path(path)
     if source.is_dir():
         table = (source / "records.csv").read_text(encoding="utf-8")
@@ -927,7 +929,18 @@ def load_byod_dataset(path: str | Path) -> list[dict[str, Any]]:
     if missing:
         raise ValueError(f"records.csv is missing columns {sorted(missing)}")
     out = []
+    seen: set[str] = set()
     for row in rows:
+        group = (row.get("group") or "").strip()
+        if require_group and not group:
+            raise ValueError(
+                f"records.csv row for id {row['id']!r} has no `group`; every row needs the scan, capture "
+                "session or device the view belongs to so the split stays group-disjoint (pass "
+                "require_group=False to split by view instead, without that guarantee)"
+            )
+        if row["id"] in seen:
+            raise ValueError(f"records.csv lists id {row['id']!r} more than once")
+        seen.add(row["id"])
         image = Image.open(io.BytesIO(loader(row["image"])))
         image.load()
         item: dict[str, Any] = {
@@ -937,8 +950,8 @@ def load_byod_dataset(path: str | Path) -> list[dict[str, Any]]:
         }
         if row.get("mask"):
             item["mask"] = _load_npy(loader(row["mask"]))
-        if row.get("group"):
-            item["group"] = row["group"]
+        if group:
+            item["group"] = group
         out.append(item)
     return out
 

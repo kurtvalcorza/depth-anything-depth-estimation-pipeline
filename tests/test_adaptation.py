@@ -463,3 +463,40 @@ def test_targets_reject_a_sparse_mask():
     record["mask"][0, 1] = 1.0
     target, valid = pl.DepthAnythingPipeline._targets(record, (8, 8), "cpu")
     assert int(valid.sum()) == 2 and bool(torch.isfinite(target).all())
+
+
+def test_byod_requires_a_group_on_every_row(tmp_path, forbid_model_imports):
+    records = _records(4)
+    folder = tmp_path / "ungrouped"
+    folder.mkdir()
+    rows = []
+    for record in records:
+        record["image"].save(folder / f"{record['id']}.png")
+        np.save(folder / f"{record['id']}_depth.npy", record["depth"])
+        np.save(folder / f"{record['id']}_mask.npy", record["mask"])
+        rows.append(
+            {
+                "id": record["id"],
+                "image": f"{record['id']}.png",
+                "depth": f"{record['id']}_depth.npy",
+                "mask": f"{record['id']}_mask.npy",
+                "group": "",
+            }
+        )
+
+    def write_rows(table):
+        with open(folder / "records.csv", "w", encoding="utf-8", newline="") as handle:
+            writer = csv.DictWriter(handle, fieldnames=["id", "image", "depth", "mask", "group"])
+            writer.writeheader()
+            writer.writerows(table)
+
+    write_rows(rows)
+    with pytest.raises(ValueError, match="has no `group`"):
+        load_byod_dataset(folder)
+    assert len(load_byod_dataset(folder, require_group=False)) == 4  # the explicit opt-out
+    grouped = [{**row, "group": "scan-" + row["id"][-1]} for row in rows]
+    write_rows(grouped)
+    assert {r["group"] for r in load_byod_dataset(folder)} == {"scan-" + r["id"][-1] for r in records}
+    write_rows(grouped + [grouped[0]])
+    with pytest.raises(ValueError, match="more than once"):
+        load_byod_dataset(folder)
