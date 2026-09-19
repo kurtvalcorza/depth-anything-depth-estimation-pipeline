@@ -64,8 +64,7 @@ weights/diode-sample/        # git-ignored run-time cache of the 40 pinned DIODE
 
 ## Release status
 
-**Candidate.** Static/unit checks do not constitute clean-runtime notebook evidence. The earlier `TASK-INFERENCE` notebook's Kaggle T4 run (`docs/release-verification.md`, `evidence/release-verification-kaggle.json`) is retained as history and is not evidence for the `E2E` blob; complete `docs/release-verification.md` against the exact release revision before calling the notebook release-grade.
-
+**Release-grade** — the `E2E` notebook blob `f3809066` (committed at `e777e2c`) executed top-to-bottom in a clean Kaggle Tesla T4 runtime on 2026-09-19 (11/11 ok (1 restart after install cell), 312.3 s); the record is in `docs/release-verification.md` and `STATUS.md`. Static and unit checks — including the standalone generator parity checks — are necessary but were never the evidence; the hosted run is. A later change to the carried modules or the notebook returns the status to Candidate until re-verified.
 
 ## Documentation
 
