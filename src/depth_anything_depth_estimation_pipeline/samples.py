@@ -914,10 +914,22 @@ def load_byod_dataset(path: str | Path, *, require_group: bool = True) -> list[d
     source = Path(path)
     if source.is_dir():
         table = (source / "records.csv").read_text(encoding="utf-8")
-        loader = lambda name: (source / name).read_bytes()  # noqa: E731
+        base_dir = source.resolve()
+
+        def loader(name: str) -> bytes:
+            target = (source / name).resolve()
+            if base_dir not in target.parents:
+                raise ValueError(f"BYOD file reference {name!r} leaves the dataset directory")
+            return target.read_bytes()
+
     elif source.is_file() and source.suffix.lower() == ".zip":
         archive = zipfile.ZipFile(source)
-        members = {Path(n).name: n for n in archive.namelist()}
+        names = [n for n in archive.namelist() if not n.endswith("/")]
+        basenames = [Path(n).name for n in names]
+        if len(set(basenames)) != len(basenames):
+            duplicate = next(b for b in basenames if basenames.count(b) > 1)
+            raise ValueError(f"BYOD zip holds more than one member named {duplicate!r}")
+        members = dict(zip(basenames, names, strict=True))
         if "records.csv" not in members:
             raise ValueError("BYOD zip must contain records.csv")
         table = archive.read(members["records.csv"]).decode("utf-8")

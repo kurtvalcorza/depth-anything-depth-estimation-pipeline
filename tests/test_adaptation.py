@@ -500,3 +500,22 @@ def test_byod_requires_a_group_on_every_row(tmp_path, forbid_model_imports):
     write_rows(grouped + [grouped[0]])
     with pytest.raises(ValueError, match="more than once"):
         load_byod_dataset(folder)
+
+
+def test_byod_refuses_escaping_paths_and_duplicate_zip_basenames(tmp_path, forbid_model_imports):
+    records = _records(4)
+    folder = tmp_path / "byod"
+    folder.mkdir()
+    records[0]["image"].save(tmp_path / "outside.png")
+    (folder / "records.csv").write_text(
+        "id,image,depth,mask,group\nr0,../outside.png,d.npy,m.npy,g0\n", encoding="utf-8"
+    )
+    with pytest.raises(ValueError, match="leaves the dataset directory"):
+        load_byod_dataset(folder)
+    duplicate = tmp_path / "dup.zip"
+    with zipfile.ZipFile(duplicate, "w") as zf:
+        zf.writestr("a/records.csv", "id\n")
+        zf.writestr("a/x.png", b"x")
+        zf.writestr("b/x.png", b"y")
+    with pytest.raises(ValueError, match="more than one member named"):
+        load_byod_dataset(duplicate)
