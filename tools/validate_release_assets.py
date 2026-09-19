@@ -1,4 +1,4 @@
-"""Static release-asset validation for the Depth Anything V2 Small depth-estimation DIMER pipeline.
+"""Static release-asset validation for the Depth Anything V2 Small relative-depth DIMER pipeline.
 
 Checks the STANDALONE tutorial notebook (DIMER Notebook Specification 2.0 §4), the tutorial
 registry, model card, README, STATUS.md and weight documentation for source conformance and
@@ -23,33 +23,63 @@ ROOT = Path(__file__).resolve().parents[1]
 PACKAGE = "depth_anything_depth_estimation_pipeline"
 REPO_NAME = "depth-anything-depth-estimation-pipeline"
 NOTEBOOK_NAME = "depth_anything_depth_estimation_colab.ipynb"
-EXPECTED_PROFILE = "TASK-INFERENCE"
+EXPECTED_PROFILE = "E2E"
 EXPECTED_MODEL_ID = "depth-anything/Depth-Anything-V2-Small-hf"
 PIPELINE_CLASS = "DepthAnythingPipeline"
-# Additional 40-hex revisions a document may legitimately cite (none by default).
-KNOWN_SHAS: frozenset[str] = frozenset(())
-# Colab form gates that must default to the non-interactive sample path.
+MODEL_LOAD_EXPR = f"{PIPELINE_CLASS}.from_pretrained(weights_dir=WEIGHTS_DIR)"
+KNOWN_SHAS: frozenset[str] = frozenset()  # the 120 DIODE file digests live in the carried samples module, not in prose
 BYOD_GATES = ("USE_BYOD",)
-# Machine-readable artifacts the notebook must write (OUT1-OUT3, DAT24, EVAL21).
 EXPECTED_OUTPUTS = (
+    "outputs/depth_anything_depth_estimation_train.csv",
     "outputs/depth_anything_depth_estimation_input_manifest.json",
     "outputs/depth_anything_depth_estimation_evaluation_report.json",
-    "outputs/depth_anything_depth_estimation_result.json",
-    "outputs/depth_anything_depth_estimation_depth.npy",
     "outputs/depth_anything_depth_estimation_preview.png",
+    "outputs/depth_anything_depth_estimation_adapter",
+    "outputs/depth_anything_depth_estimation_result.json",
 )
-# Profile-specific code the notebook must exercise through the carried module's public API.
 CODE_MARKERS = (
-    "input_manifest = validate_inputs(image, names=[sample_name])",
+    # Stage 4: pinned corpus, validation, scan-level split, scan summary, CSV, refusal probes
+    "USE_BYOD = False",
+    "corpus = read_corpus(fetch_corpus(cache_dir='weights/diode-sample'))",
+    "splits = build_sample_dataset(corpus, seed=SPLIT_SEED)",
+    "records = load_byod_dataset(byod_path)",
+    "dataset_manifests = {name: validate_dataset(part, min_records=1) for name, part in splits.items()}",
+    "disjoint = check_split_disjoint(splits)",
+    "summary = scan_summary(splits)",
+    "write_dataset_csv(train_records, 'outputs/depth_anything_depth_estimation_train.csv')",
+    # Stage 5: the inference contract with its manifest, rejection probe, sanity checks and sample-sanity report
+    "input_manifest = validate_inputs(image, names=[probe_record['id']])",
     "validate_inputs(Image.new('RGB', (MIN_IMAGE_SIDE, int(MIN_IMAGE_SIDE * (MAX_ASPECT_RATIO + 1)))))",
     "result = pipe.predict(image)",
-    "report = evaluation_report(result, reference_depth, sample_kind=sample_kind)",
-    "print({'ceilings': {'MIN_IMAGE_SIDE': MIN_IMAGE_SIDE, 'MAX_IMAGE_SIDE': MAX_IMAGE_SIDE, 'MAX_ASPECT_RATIO': MAX_ASPECT_RATIO}})",
-    "reference_depth = None",
-    "hashlib.sha256(np.asarray(image.convert('RGB')).tobytes()).hexdigest()",
-    "'depth_kind': result['depth_kind']",
+    "'contract': {'DEPTH_KIND': DEPTH_KIND, 'TRANSFORMER_BLOCKS': TRANSFORMER_BLOCKS, 'PARAMETER_COUNT': PARAMETER_COUNT, 'EVAL_DEPTH_RANGE_M': EVAL_DEPTH_RANGE_M}",
     "'non_degenerate_range': result['depth_max'] > result['depth_min']",
-    "np.save('outputs/depth_anything_depth_estimation_depth.npy', depth)",
+    "report = evaluation_report(result, reference_depth, sample_kind=",
+    "assert report['verdict'] == 'sample-sanity' and report['metrics'][0]['id'] == 'abs_rel'",
+    # Stage 6: the two priors and the zero-shot policy
+    "priors = prior_baselines(test_records)",
+    "zero_shot_test = pipe.evaluate(test_records)",
+    "zero_shot_maps = {r['id']: pipe.predict(r['image'])['depth'] for r in show}",
+    "assert zero_shot_test['abs_rel'] < priors['constant_prior']['abs_rel'] and zero_shot_test['abs_rel'] < priors['vertical_gradient_prior']['abs_rel']",
+    # Stage 7: the policy ladder with explicit hyperparameters
+    "adapt_result = pipe.adapt(",
+    "trainable_blocks=TRAINABLE_BLOCKS",
+    "head_epochs=HEAD_EPOCHS",
+    "lr=LEARNING_RATE",
+    "'selected_policy': adapt_result['policy']",
+    # Stage 8: held-out evaluation, comparison, assertion
+    "adapted_test = pipe.evaluate(test_records)",
+    "adapted_val = pipe.evaluate(val_records)",
+    "'delta_vs_zero_shot'",
+    "assert adapted_test['abs_rel'] < priors['constant_prior']['abs_rel'] and adapted_test['abs_rel'] < priors['vertical_gradient_prior']['abs_rel']",
+    # Stage 9: before/after maps, preview, artifact, reload parity, provenance
+    "aligned_abs_rel(before, record['depth'], record['mask'])",
+    "sheet.save('outputs/depth_anything_depth_estimation_preview.png')",
+    "pipe.save_artifact(artifact_dir, metadata=",
+    "reloaded = DepthAnythingPipeline.from_artifact(artifact_dir, weights_dir=WEIGHTS_DIR, device=pipe.device)",
+    "assert parity['depth_map_identical'] and abs(adapted_test['abs_rel'] - reloaded_test['abs_rel']) < 1e-9",
+    "weight_entry = next(entry for entry in MANIFEST['files'] if entry['path'] == WEIGHTS_FILE)",
+    "'weight_format': 'safetensors, digest-verified'",
+    "'corpus': {'name': CORPUS_NAME, 'release': CORPUS_RELEASE, 'base_url': CORPUS_BASE_URL, 'commit': CORPUS_COMMIT",
     "'model_revision': MODEL_REVISION",
     "'model_license': MODEL_LICENSE",
     "transformers.__version__",
@@ -57,15 +87,21 @@ CODE_MARKERS = (
 )
 # Profile-specific learner-facing statements.
 MARKDOWN_MARKERS = (
-    "**Capability:** monocular relative depth estimation",
-    "relative inverse depth",
-    "**not metric**",
-    "`MIN_IMAGE_SIDE`",
-    "`MAX_IMAGE_SIDE`",
-    "`MAX_ASPECT_RATIO`",
-    "the verdict is `not-measurable`",
-    "`sample-sanity`",
-    "does not provide metric depth, video",
+    "**Capability:** monocular relative depth estimation from one RGB still image and bounded supervised adaptation",
+    "selected on validation against the untouched checkpoint",
+    "**relative inverse depth**",
+    "**not metres**",
+    "**supervised adaptation under an explicit policy ladder**",
+    "**constant prior**",
+    "**vertical-gradient prior**",
+    "**zero-shot policy**",
+    "**frozen policy**",
+    "**unfrozen policy**",
+    "**lowest validation AbsRel**",
+    "**`sample-sanity`**",
+    "no dispersion estimate",
+    "metric (absolute) depth, video or temporal depth, stereo or multi-view fusion, surface normals",
+    "CC BY 4.0, Vasiljevic et al. 2019",
 )
 # Direct-library use that must stay inside the carried module cell (G2: the notebook calls the
 # pipeline API, it does not reimplement it). Checked on every code cell except the embedded one.
@@ -73,11 +109,20 @@ FORBIDDEN_OUTSIDE_MODULE = (
     "from huggingface_hub import",
     "import huggingface_hub",
     "hf_hub_download(",
-    "from torchvision import",
-    "from transformers import",
-    "import transformers.",
     "AutoModelForDepthEstimation",
     "AutoImageProcessor",
+    "from transformers import",
+    "import transformers.",
+    "urllib.request",
+    "from safetensors",
+    "load_file(",
+    "save_file(",
+    ".backward(",
+    "torch.optim",
+    "pipe._model",
+    "pipe._processor",
+    "predicted_depth",
+    "np.linalg.lstsq(",
 )
 
 # ---------------------------------------------------------------------------
@@ -150,7 +195,7 @@ COMMON_MARKDOWN_MARKERS = (
     "**Learning objectives:**",
     "## Prerequisites",
     "Do not upload confidential or restricted",
-    "- **External access:** the Hugging Face Hub only",
+    "- **External access:** the Hugging Face Hub",
     "## 1. Install the pinned runtime",
     "## 2. Pipeline code (carried verbatim from",
     "## 3. Pin, stage and verify the model",
@@ -171,7 +216,12 @@ FORBIDDEN_PATTERNS = (
     ("trust_remote_code enabled", re.compile(r"trust_remote_code\s*[=:]\s*True")),
     (
         "unsafe deserialization",
-        re.compile(r"\bpickle\.load|\btorch\.load\s*\(|getattr\(\s*torch\s*,\s*['\"]load['\"]"),
+        re.compile(
+            r"\bpickle\.load"
+            r"|\btorch\.load\s*\((?![^)]*weights_only\s*=\s*True)"
+            r"|weights_only\s*=\s*False"
+            r"|getattr\(\s*torch\s*,\s*['\"]load['\"]"
+        ),
     ),
     ("archive extractall", re.compile(r"\.extractall\s*\(")),
     ("notebook magic or shell escape", re.compile(r"(?m)^\s*[%!]|get_ipython\(\)")),
@@ -346,13 +396,16 @@ def _validate_notebook_structure(path: Path, notebook: dict) -> tuple[list[tuple
     _check(dimer.get("notebook_mode") in ("REFERENCE", "GUIDED", "WORKSHOP"), f"{path.name}: metadata.dimer.notebook_mode must declare a §3.3 pedagogical mode")
     _check(dimer.get("standalone") is True, f"{path.name}: metadata.dimer.standalone must be true (ST6)")
     generated = dimer.get("generated_from")
+    _template = _load_tool("notebook_template").TEMPLATE
     _check(isinstance(generated, dict), f"{path.name}: metadata.dimer.generated_from is required (ST5)")
     _check(generated.get("repository") == REPO_NAME, f"{path.name}: generated_from.repository must be {REPO_NAME}")
     _check(
-        generated.get("module") == f"src/{PACKAGE}/pipeline.py",
-        f"{path.name}: generated_from.module must be src/{PACKAGE}/pipeline.py",
+        generated.get("module") == f"{_template.get('package_dir', f'src/{PACKAGE}')}/{_template.get('entry_module', 'pipeline.py')}",
+        f"{path.name}: generated_from.module must name the template entry module",
     )
-    module_sha = hashlib.sha256(_read(ROOT / "src" / PACKAGE / "pipeline.py").encode("utf-8")).hexdigest()
+    _pkg_dir = ROOT / _template.get("package_dir", f"src/{PACKAGE}")
+    _order = _load_tool("build_notebook")._module_order(_pkg_dir, list(_template.get("modules", ["pipeline.py"])))
+    module_sha = hashlib.sha256("".join(_read(_pkg_dir / m) for m in _order).encode("utf-8")).hexdigest()
     _check(
         generated.get("module_sha256") == module_sha,
         f"{path.name}: generated_from.module_sha256 does not match src/ (PAR4: regenerate the notebook)",
@@ -423,38 +476,47 @@ def _validate_gates(path: Path, code_cells: list[tuple[int, str, ast.Module]]) -
                 )
 
 
-def _validate_embedded_module(path: Path, notebook: dict, build) -> int:
-    """PAR1: exactly one tagged cell, equal to the module after the documented rewrites."""
+def _validate_embedded_modules(path: Path, notebook: dict, build) -> list[int]:
+    """PAR1: one tagged cell per carried module, in dependency order, each equal to its module after
+    the documented rewrites (generator /2 multi-module carrier; ST2 applied per module)."""
     tagged = [
         (index, cell)
         for index, cell in enumerate(notebook.get("cells", []))
         if cell.get("cell_type") == "code" and cell.get("metadata", {}).get("dimer", {}).get("embedded_module")
     ]
-    _check(len(tagged) == 1, f"{path.name}: exactly one cell must be tagged metadata.dimer.embedded_module (ST2)")
-    index, cell = tagged[0]
+    template = _load_tool("notebook_template").TEMPLATE
+    recorded = notebook["metadata"]["dimer"]["generated_from"]["revision"]
+    context = build.load_context(ROOT, template, recorded)
+    expected_rels = context["module_rels"]
     _check(
-        cell["metadata"]["dimer"]["embedded_module"] == f"src/{PACKAGE}/pipeline.py",
-        f"{path.name}: embedded_module tag must name src/{PACKAGE}/pipeline.py",
+        [cell["metadata"]["dimer"]["embedded_module"] for _, cell in tagged] == expected_rels,
+        f"{path.name}: the cells tagged metadata.dimer.embedded_module must be exactly {expected_rels}, in order (ST2)",
     )
-    expected = build.apply_rewrites(_read(ROOT / "src" / PACKAGE / "pipeline.py"))
-    _check(
-        _cell_source(cell).rstrip("\n") + "\n" == expected,
-        f"{path.name}: embedded module differs from src/{PACKAGE}/pipeline.py (PAR1); regenerate the notebook",
-    )
-    return index
+    for (index, cell), module, rel in zip(
+        tagged, context["modules"], context["module_rels"], strict=True
+    ):
+        _check(
+            cell["metadata"]["dimer"].get("module_sha256") == context["per_module_sha256"][rel],
+            f"{path.name}: cell {index} module_sha256 tag does not match {rel}",
+        )
+        _check(
+            _cell_source(cell).rstrip("\n") + "\n" == context["embedded"][module],
+            f"{path.name}: embedded module cell {index} differs from {rel} (PAR1); regenerate the notebook",
+        )
+    return [index for index, _ in tagged]
 
 
 def _validate_identity(
-    path: Path, code_cells: list[tuple[int, str, ast.Module]], embedded_index: int, revision: str
+    path: Path, code_cells: list[tuple[int, str, ast.Module]], embedded: list[int], revision: str
 ) -> None:
     """Identity constants are bound in the carried module only; nothing outside rebinds them."""
     for index, _source, tree in code_cells:
-        if index == embedded_index:
+        if index in embedded:
             continue
         for node in ast.walk(tree):
             rebound = [name for name in _assignment_targets(node) if name in IDENTITY_NAMES]
             _check(not rebound, f"{path.name}: {rebound} must not be rebound outside the module cell (cell {index})")
-    outside = "\n".join(source for index, source, _ in code_cells if index != embedded_index)
+    outside = "\n".join(source for index, source, _ in code_cells if index not in embedded)
     manifest_block = re.search(r"^MANIFEST = (\{.*?^\})$", outside, re.M | re.S)
     _check(manifest_block is not None, f"{path.name}: model cell must carry an inline MANIFEST literal (ST3)")
     outside_without_manifest = outside.replace(manifest_block.group(0), "")
@@ -495,12 +557,12 @@ def _validate_bootstrap_guard(path: Path, code_cells: list[tuple[int, str, ast.M
 
 
 def _validate_notebook_content(
-    path: Path, code_cells: list[tuple[int, str, ast.Module]], markdown: str, embedded_index: int
+    path: Path, code_cells: list[tuple[int, str, ast.Module]], markdown: str, embedded: list[int]
 ) -> None:
     model_id, _revision = _package_identity()
     stripped = {index: _strip_comments(source) for index, source, _ in code_cells}
     code = "\n".join(stripped.values())
-    outside = "\n".join(text for index, text in stripped.items() if index != embedded_index)
+    outside = "\n".join(text for index, text in stripped.items() if index not in embedded)
     missing = [marker for marker in COMMON_CODE_MARKERS + CODE_MARKERS if marker not in code]
     _check(not missing, f"{path.name}: missing required source markers: {missing}")
     present = [label for label, pattern in FORBIDDEN_PATTERNS if pattern.search(code)]
@@ -508,8 +570,8 @@ def _validate_notebook_content(
     leaked = [marker for marker in FORBIDDEN_OUTSIDE_MODULE if marker in outside]
     _check(not leaked, f"{path.name}: direct library use outside the carried module cell (G2): {leaked}")
     _check(
-        f"pipe = {PIPELINE_CLASS}.from_pretrained(weights_dir=WEIGHTS_DIR)" in outside,
-        f"{path.name}: must load through {PIPELINE_CLASS}.from_pretrained(weights_dir=WEIGHTS_DIR) (INF1)",
+        f"pipe = {MODEL_LOAD_EXPR}" in outside,
+        f"{path.name}: must load through {MODEL_LOAD_EXPR} (INF1)",
     )
     _validate_gates(path, code_cells)
     _validate_bootstrap_guard(path, code_cells)
@@ -530,11 +592,11 @@ def validate_notebooks() -> None:
     build = _load_tool("build_notebook")
     notebook = json.loads(_read(path))
     code_cells, markdown = _validate_notebook_structure(path, notebook)
-    embedded_index = _validate_embedded_module(path, notebook, build)
+    embedded = _validate_embedded_modules(path, notebook, build)
     _model_id, revision = _package_identity()
-    _validate_identity(path, code_cells, embedded_index, revision)
+    _validate_identity(path, code_cells, embedded, revision)
     _validate_parity(path, notebook, code_cells, build)
-    _validate_notebook_content(path, code_cells, markdown, embedded_index)
+    _validate_notebook_content(path, code_cells, markdown, embedded)
     registry = _read(tutorials / "README.md")
     _check(f"`{path.name}`" in registry, f"{path.name} missing from tutorials/README.md")
     _check(f"`{EXPECTED_PROFILE}`" in registry, f"tutorials/README.md must record `{EXPECTED_PROFILE}`")
