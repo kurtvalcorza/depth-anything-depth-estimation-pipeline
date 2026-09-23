@@ -44,7 +44,7 @@ The task is monocular relative depth estimation: input is one RGB still image (`
 
 ###### Primary Intended Users
 
-Intended users are machine-learning engineers, computer-vision researchers, and application developers integrating a depth prior into a larger system, in research or internal enterprise settings. A user is expected to understand that inverse depth is not distance, that the map has arbitrary scale and shift and so cannot be compared across images without alignment, what `abs_rel` measures and why it requires an affine alignment step, and the ceilings the pipeline enforces (`MAX_IMAGE_SIDE`, `MIN_IMAGE_SIDE`, `MAX_ASPECT_RATIO`). Users who need metric depth, camera intrinsics handling, or temporal consistency across video frames are expected to know that none of those is provided here.
+Intended users are machine-learning engineers, computer-vision researchers, and application developers integrating a depth prior into a larger system, in research or in-house enterprise settings. A user is expected to understand that inverse depth is not distance, that the map has arbitrary scale and shift and so cannot be compared across images without alignment, what `abs_rel` measures and why it requires an affine alignment step, and the ceilings the pipeline enforces (`MAX_IMAGE_SIDE`, `MIN_IMAGE_SIDE`, `MAX_ASPECT_RATIO`). Users who need metric depth, camera intrinsics handling, or temporal consistency across video frames are expected to know that none of those is provided here.
 
 ###### Out-of-scope use cases
 
