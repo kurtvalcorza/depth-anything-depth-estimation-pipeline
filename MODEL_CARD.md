@@ -40,7 +40,7 @@ The uses below are the ones the package was built to support; everything else is
 
 ###### Primary Intended Uses
 
-The task is monocular relative depth estimation: input is one RGB still image (`PIL.Image.Image`, any mode, converted to RGB), output is a float32 array of shape `H x W` at the input resolution holding relative inverse depth, plus `depth_min`, `depth_max`, and `depth_kind: "relative"`. Envisioned applications are per-image depth ordering for photo editing effects (relighting, bokeh, parallax), coarse scene layout for robotics or AR prototyping where a downstream stage supplies scale, foreground/background separation in content tooling, and as a feature input to other models that consume depth maps. Within DIMER the package is an inference component and a zero-configuration baseline for relative depth, not a calibrated measurement service.
+The task is monocular relative depth estimation: input is one RGB still image (`PIL.Image.Image`, any mode, converted to RGB), output is a float32 array of shape `H x W` at the input resolution holding relative inverse depth, plus `depth_min`, `depth_max`, and `depth_kind: "relative"`. Envisioned applications are per-image depth ordering for photo editing effects (relighting, bokeh, parallax), coarse scene layout for robotics or AR prototyping where a downstream stage supplies scale, foreground/background separation in content tooling, and as a feature input to other models that consume depth maps. The package is an inference component and a zero-configuration baseline for relative depth, not a calibrated measurement service.
 
 ###### Primary Intended Users
 
@@ -115,7 +115,7 @@ This pipeline is not intended for decisions in health, safety, criminal justice,
 
 ###### Use cases
 
-Prohibited even where the model would work: covert surveillance or tracking of people via depth-based presence or gait cues, biometric or demographic profiling, social scoring, and any use that discriminates unlawfully in employment, housing, credit, insurance, education, or healthcare access. Also prohibited are deceptive uses — fabricating "measured" depth or 3D evidence presented as sensor data — and any use that violates the upstream Apache-2.0 licence terms, the DIMER deployment terms, or the consent and data-protection obligations attached to the images processed. High-consequence physical control based on this output alone is prohibited by the intended-use contract above.
+Prohibited even where the model would work: covert surveillance or tracking of people via depth-based presence or gait cues, biometric or demographic profiling, social scoring, and any use that discriminates unlawfully in employment, housing, credit, insurance, education, or healthcare access. Also prohibited are deceptive uses — fabricating "measured" depth or 3D evidence presented as sensor data — and any use that violates the upstream Apache-2.0 licence terms, the terms of the deployment that runs the pipeline, or the consent and data-protection obligations attached to the images processed. High-consequence physical control based on this output alone is prohibited by the intended-use contract above.
 
 ## Immutable provenance
 
