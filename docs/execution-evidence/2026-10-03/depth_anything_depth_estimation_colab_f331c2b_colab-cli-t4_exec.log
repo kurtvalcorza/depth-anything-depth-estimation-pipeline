@@ -1,0 +1,69 @@
+[colab] Parsing notebook '/home/kurt/colab-runs/depth-anything-depth-estimation-pipeline-f331c2b-5b7119/depth_anything_depth_estimation_colab_f331c2b_colab-cli-t4.ipynb'...
+[colab] Executing cell 1/13 - Infrastructure: install the locked runtime into an isolated environment...
+{'isolated_environment': '/content/dimer_isolated_env', 'isolated_python': '3.12.12', 'kernel_python': '3.13.15', 'locked_packages': 47, 'setup_seconds': 60}
+[colab] Executing cell 2/13 - Route the remaining cells to the isolated environment...
+Every later code cell now runs in /content/dimer_isolated_env/bin/python (pid 1919).
+[colab] Executing cell 3/13 - depth_anything_depth_estimation-07...
+{'notebook_source': {'repository': 'depth-anything-depth-estimation-pipeline', 'repository_revision': 'e9233f778a67afce387beb3b90eefbab0b8c0a5c', 'embedded_module': 'src/depth_anything_depth_estimation_pipeline/pipeline.py', 'embedded_modules': ['src/depth_anything_depth_estimation_pipeline/metrics.py', 'src/depth_anything_depth_estimation_pipeline/pipeline.py', 'src/depth_anything_depth_estimation_pipeline/samples.py'], 'module_sha256': '0f55959c64e549cfe6a055760ef8eb8d7f0f857fca75252c87d26a5ab49c4063', 'generator': 'build_notebook.py/2.1', 'notebook_spec': '2.2'}, 'python': '3.12.12', 'torch': '2.14.0+cu130', 'transformers': '4.57.6', 'cuda': True}
+[colab] Executing cell 4/13 - depth_anything_depth_estimation-09...
+[colab] Executing cell 5/13 - depth_anything_depth_estimation-11...
+[colab] Executing cell 6/13 - depth_anything_depth_estimation-13...
+[colab] Executing cell 7/13 - depth_anything_depth_estimation-15...
+{'model_id': 'depth-anything/Depth-Anything-V2-Small-hf', 'revision': '5426e4f0f36572d16453bbda7a8389317b1bef99', 'license': 'apache-2.0', 'files': 4, 'total_bytes': 99179785}
+{'weights_dir': '/content/weights/depth-anything-v2-small', 'fetched': ['README.md', 'config.json', 'model.safetensors', 'preprocessor_config.json']}
+{'verified_files': 4, 'revision': '5426e4f0f36572d16453bbda7a8389317b1bef99'}
+Using a slow image processor as `use_fast` is unset and a slow processor was saved with this model. `use_fast=True` will be the default behavior in v4.52, even if the model was saved with a slow processor. This will result in minor differences in outputs. You'll still be able to use a slow processor with `use_fast=False`.
+{'device': 'cuda:0', 'source': 'local-snapshot'}
+[colab] Executing cell 8/13 - depth_anything_depth_estimation-17...
+{'data_source': 'DIODE validation views (indoor + outdoor) with metric depth (DIODE validation release (CC BY 4.0) as served by the Marigold evaluation dataset archive at ETH Zürich PRS (diode/diode_val.tar, read by pinned byte ranges); 40 views pinned 2026-09-19; source moved 2026-10-03 after the earlier Hugging Face Hub mirror was withdrawn (same files, same digests); CC BY 4.0 (DIODE: A Dense Indoor and Outdoor DEpth Dataset, Vasiljevic et al., 2019))', 'raw': {'views': 40, 'scans': 20, 'domains': ['indoors', 'outdoor']}, 'splits': {'train': 24, 'validation': 8, 'test': 8}, 'scan_summary': {'train': {'views': 24, 'scans': 12, 'domains': {'indoors': 12, 'outdoor': 12}}, 'validation': {'views': 8, 'scans': 4, 'domains': {'indoors': 4, 'outdoor': 4}}, 'test': {'views': 8, 'scans': 4, 'domains': {'indoors': 4, 'outdoor': 4}}}, 'fetch_seconds': 606.4, 'corpus_bytes': 312448846}
+{'train': {'n': 24, 'scans': 12, 'domains': {'indoors': 12, 'outdoor': 12}, 'image_side': {'min': 1024, 'max': 1024}, 'valid_fraction': {'min': 0.2743, 'max': 1.0}, 'median_depth_m': {'min': 1.066, 'max': 29.716}, 'digest': 'e7709c2081d1c748...'}}
+{'validation': {'n': 8, 'scans': 4, 'domains': {'indoors': 4, 'outdoor': 4}, 'image_side': {'min': 1024, 'max': 1024}, 'valid_fraction': {'min': 0.6308, 'max': 1.0}, 'median_depth_m': {'min': 2.294, 'max': 25.645}, 'digest': 'ea60095be6b7f786...'}}
+{'test': {'n': 8, 'scans': 4, 'domains': {'outdoor': 4, 'indoors': 4}, 'image_side': {'min': 1024, 'max': 1024}, 'valid_fraction': {'min': 0.4382, 'max': 0.9999}, 'median_depth_m': {'min': 2.287, 'max': 21.55}, 'digest': '8f3bddbda04ab15f...'}}
+{'example': {'id': 'train-000', 'domain': 'indoors', 'scene': 'scene_00021', 'scan': 'scan_00188', 'source_url': 'https://share.phys.ethz.ch/~pf/bingkedata/marigold/evaluation_dataset/diode/diode_val.tar#indoors/scene_00021/scan_00188/00021_00188_indoors_090_020.png'}, 'size': (1024, 768), 'depth_dtype': 'float32', 'valid_fraction': 0.9958}
+{'probe': 'duplicate id', 'rejected': "duplicate id 'same'"}
+{'probe': 'depth shape', 'rejected': 'records[0]: depth shape (767, 1024) != image (height, width) (768, 1024)'}
+{'probe': 'no valid depth', 'rejected': 'records[0]: only 0.0% of pixels carry valid depth; at least 5% are required'}
+{'probe': 'too small', 'rejected': '3 records; 4..2000 are required'}
+[colab] Executing cell 9/13 - depth_anything_depth_estimation-19...
+{'ceilings': {'MIN_IMAGE_SIDE': 14, 'MAX_IMAGE_SIDE': 4096, 'MAX_ASPECT_RATIO': 4.0}, 'contract': {'DEPTH_KIND': 'relative', 'TRANSFORMER_BLOCKS': 12, 'PARAMETER_COUNT': 24785089, 'EVAL_DEPTH_RANGE_M': (0.6, 350.0)}}
+{'probe_id': 'test-000', 'domain': 'outdoor', 'seconds': 0.471, 'device': 'cuda:0', 'checks': {'shape_matches_input': True, 'dtype_float32': True, 'all_finite': True, 'non_degenerate_range': True}, 'findings': 1}
+{'verdict': 'sample-sanity', 'metrics': [{'id': 'abs_rel', 'value': 0.12123723321577512, 'align': True, 'n_valid_pixels': 703835, 'estimation': 'single image, least-squares affine alignment in inverse depth, no dispersion estimate'}], 'reason': 'one image with caller-supplied metric depth from the tutorial sample; not a benchmark'}
+<PIL.Image.Image image mode=RGB size=1024x384 at 0x7C4908472D80>
+
+[Image saved to: /tmp/tmpaiz8htvc.png]
+[colab] Executing cell 10/13 - depth_anything_depth_estimation-21...
+{'constant_prior': {'abs_rel': 0.3346, 'delta1': 0.5564, 'n': 8}, 'baseline': "every pixel at the image's own median reference depth (oracle constant)"}
+{'vertical_gradient_prior': {'abs_rel': 0.2597, 'delta1': 0.5828, 'n': 8}, 'baseline': 'inverse depth rising linearly from the top row to the bottom row, affine-aligned like a prediction'}
+{'zero_shot_policy': 'zero-shot (no adaptation)', 'adapted': False, 'test': {'abs_rel': 0.18, 'delta1': 0.7644, 'n': 8}, 'per_domain': {'indoors': {'abs_rel': 0.075, 'delta1': 0.9485, 'n': 4}, 'outdoor': {'abs_rel': 0.285, 'delta1': 0.5804, 'n': 4}}, 'verdict': 'measured-small-sample', 'seconds': 1.3}
+{'per_view': [('test-000', 'outdoor', 0.121, 0.862), ('test-001', 'outdoor', 0.344, 0.656), ('test-002', 'outdoor', 0.404, 0.282), ('test-003', 'indoors', 0.133, 0.898), ('test-004', 'outdoor', 0.271, 0.521), ('test-005', 'indoors', 0.057, 0.956), ('test-006', 'indoors', 0.071, 0.952), ('test-007', 'indoors', 0.039, 0.988)]}
+{'definitions': {'alignment': 'per image, least-squares scale and shift mapping the prediction onto 1 / reference depth over the valid pixels inside EVAL_DEPTH_RANGE_M; the aligned inverse depth is floored at 1 / the far cap', 'abs_rel': 'mean over valid pixels of |aligned estimate - reference| / reference, then mean over images', 'delta1': 'fraction of valid pixels with max(estimate / reference, reference / estimate) < 1.25, then mean over images', 'per_domain': 'the same means restricted to the records of one domain (indoors / outdoor when present)'}}
+[colab] Executing cell 11/13 - depth_anything_depth_estimation-23...
+{'epochs': 5, 'training_views_per_epoch': 24, 'validation_views_per_epoch': 8, 'rough_seconds_per_epoch': 11, 'estimate': 'from Section 6 scoring speed on this runtime; a training step is assumed to cost about three predictions'}
+{'epoch': 1, 'stage': 'frozen backbone + DPT neck and head', 'train_loss': 0.3717, 'val_abs_rel': 0.2201, 'val_delta1': 0.8218, 'elapsed_s': 6.5}
+{'epoch': 2, 'stage': 'frozen backbone + DPT neck and head', 'train_loss': 0.3628, 'val_abs_rel': 0.1937, 'val_delta1': 0.8309, 'elapsed_s': 10.6}
+{'epoch': 3, 'stage': 'unfrozen last 2 blocks + DPT neck and head', 'train_loss': 0.352, 'val_abs_rel': 0.1394, 'val_delta1': 0.8674, 'elapsed_s': 15.1}
+{'epoch': 4, 'stage': 'unfrozen last 2 blocks + DPT neck and head', 'train_loss': 0.3356, 'val_abs_rel': 0.1328, 'val_delta1': 0.8577, 'elapsed_s': 19.5}
+{'epoch': 5, 'stage': 'unfrozen last 2 blocks + DPT neck and head', 'train_loss': 0.3241, 'val_abs_rel': 0.1295, 'val_delta1': 0.8713, 'elapsed_s': 24.2}
+{'epoch': 0, 'stage': 'zero-shot (no adaptation)', 'train_loss': None, 'val_abs_rel': 0.2426, 'val_delta1': 0.8121, 'elapsed_s': 24.2}
+{'selected_policy': 'unfrozen last 2 blocks + DPT neck and head', 'best_epoch': 5, 'selection': 'lowest validation AbsRel (epoch 0 = zero-shot checkpoint)', 'trainable_neck_head': 2728513, 'trainable_blocks': 3550464, 'total_parameters': 24785089, 'seconds': 24.2}
+[colab] Executing cell 12/13 - depth_anything_depth_estimation-25...
+{'abs_rel': {'constant_prior': 0.3346, 'vertical_gradient_prior': 0.2597, 'zero_shot': 0.18, 'selected_policy': 0.1669}}
+{'delta1': {'constant_prior': 0.5564, 'vertical_gradient_prior': 0.5828, 'zero_shot': 0.7644, 'selected_policy': 0.7652}}
+{'per_domain_abs_rel': {'indoors': {'zero_shot': 0.075, 'selected': 0.0705}, 'outdoor': {'zero_shot': 0.285, 'selected': 0.2633}}}
+{'per_view_abs_rel': {'test-000': {'zero_shot': 0.1212, 'selected': 0.164}, 'test-001': {'zero_shot': 0.3444, 'selected': 0.3064}, 'test-002': {'zero_shot': 0.4037, 'selected': 0.3594}, 'test-003': {'zero_shot': 0.1326, 'selected': 0.0988}, 'test-004': {'zero_shot': 0.2705, 'selected': 0.2236}, 'test-005': {'zero_shot': 0.0575, 'selected': 0.076}, 'test-006': {'zero_shot': 0.071, 'selected': 0.0734}, 'test-007': {'zero_shot': 0.0391, 'selected': 0.0339}}}
+{'delta_vs_zero_shot': {'abs_rel': -0.0131, 'delta1': 0.0008}}
+{'selected_policy': 'unfrozen last 2 blocks + DPT neck and head'}
+{'run_summary': {'data': 'DIODE sample', 'selected_policy': 'unfrozen last 2 blocks + DPT neck and head', 'best_epoch': 5, 'abs_rel_zero_shot_to_selected': [0.18, 0.1669], 'delta_abs_rel': -0.0131, 'delta_delta1': 0.0008, 'test_views_improved': 5, 'test_views_worsened': 3, 'test_views_unchanged': 0}}
+{'run': 1, 'data': 'DIODE sample', 'head_epochs': 2, 'epochs': 3, 'learning_rate': 1e-05, 'trainable_blocks': 2, 'best_epoch': 5, 'val_abs_rel_epoch0': 0.2426, 'zero_shot': 0.18, 'selected': 0.1669, 'delta': -0.0131, 'improved': 5, 'worsened': 3}
+{'report': 'outputs/depth_anything_depth_estimation_evaluation_report.json'}
+[colab] Executing cell 13/13 - depth_anything_depth_estimation-27...
+{'id': 'test-000', 'domain': 'outdoor', 'zero_shot_abs_rel': 0.1212, 'selected_abs_rel': 0.164, 'source_url': 'https://share.phys.ethz.ch/~pf/bingkedata/marigold/evaluation_dataset/diode/diode_val.tar#outdoor/scene_00023/scan_00199/00023_00199_outdoor_010_000.png'}
+{'id': 'test-001', 'domain': 'outdoor', 'zero_shot_abs_rel': 0.3444, 'selected_abs_rel': 0.3064, 'source_url': 'https://share.phys.ethz.ch/~pf/bingkedata/marigold/evaluation_dataset/diode/diode_val.tar#outdoor/scene_00024/scan_00202/00024_00202_outdoor_070_010.png'}
+<PIL.Image.Image image mode=RGB size=1024x512 at 0x7C490844CE60>
+
+[Image saved to: /tmp/tmpdjemjih2.png]
+{'artifact': 'outputs/depth_anything_depth_estimation_adapter', 'format': 'org.valcorza.depth-anything-v2-small.adapter.v1', 'policy': 'unfrozen last 2 blocks + DPT neck and head', 'tensors': 100, 'bytes': 25127700, 'sha256': '4531797091b97239...'}
+{'reload_parity': {'depth_map_identical': True, 'abs_rel_in_memory': 0.166932, 'abs_rel_reloaded': 0.166932}, 'reloaded_policy': 'unfrozen last 2 blocks + DPT neck and head', 'reloaded_best_epoch': 5}
+['depth_anything_depth_estimation_adapter', 'depth_anything_depth_estimation_evaluation_report.json', 'depth_anything_depth_estimation_input_manifest.json', 'depth_anything_depth_estimation_preview.png', 'depth_anything_depth_estimation_result.json', 'depth_anything_depth_estimation_train.csv']
+{'run_summary': {'data': 'DIODE sample', 'selected_policy': 'unfrozen last 2 blocks + DPT neck and head', 'best_epoch': 5, 'abs_rel_zero_shot_to_selected': [0.18, 0.1669], 'delta_abs_rel': -0.0131, 'delta_delta1': 0.0008, 'test_views_improved': 5, 'test_views_worsened': 3, 'test_views_unchanged': 0}}
+[colab] Saving notebook with outputs to '/home/kurt/colab-runs/depth-anything-depth-estimation-pipeline-f331c2b-5b7119/depth_anything_depth_estimation_colab_f331c2b_colab-cli-t4_output.ipynb'...

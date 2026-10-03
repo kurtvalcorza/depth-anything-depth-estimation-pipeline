@@ -84,7 +84,22 @@ CODE_MARKERS = (
     "'model_license': MODEL_LICENSE",
     "transformers.__version__",
     "'device': pipe.device",
+    # DAC-M2 (review 2026-10-02): Sections 5-7 start from the pretrained model; Section 6 and Section 7 refuse an
+    # adapted model; DAC-m2: BYOD group count, empty upload, BYOD_PATH; DAC-m4: run summary from the learner's run.
+    "def reset_to_pretrained():",
+    "pipe = DepthAnythingPipeline.from_pretrained(weights_dir=WEIGHTS_DIR)\n    print(",
+    "if zero_shot_test['adapted']:",
+    "if pipe.adapter is not None:",
+    "def byod_split(records, seed):",
+    "splits = byod_split(records, SPLIT_SEED)",
+    "if len(uploaded) != 1:",
+    "BYOD_PATH = \"\"",
+    "run_summary = {",
+    "'test_views_worsened'",
+    "print({'run_summary': run_summary})",
 )
+# DAC-M2: these cells must call reset_to_pretrained() before they use `pipe` (section number -> marker).
+RESET_SECTIONS = (5, 6, 7)
 # Profile-specific learner-facing statements.
 MARKDOWN_MARKERS = (
     "**Capability:** monocular relative depth estimation from one RGB still image and bounded supervised adaptation",
@@ -102,7 +117,26 @@ MARKDOWN_MARKERS = (
     "no dispersion estimate",
     "metric (absolute) depth, video or temporal depth, stereo or multi-view fusion, surface normals",
     "CC BY 4.0, Vasiljevic et al. 2019",
+    # DAC-M3 (review 2026-10-02): the guided layer of a GUIDED notebook (NOTEBOOK_SPEC 2.2 GDL1-GDL14).
+    "**Who this is for.**",
+    "**Input → Model → Output.**",
+    "**How to use this notebook.**",
+    "**Roadmap:**",
+    "> **Infrastructure.**",
+    "## 10. Your turn — change one thing: the learning rate",
+    "## Troubleshooting",
+    "## Glossary",
+    "## Conclusion (your notes)",
+    "**Every pass starts from the pretrained model.**",
+    "**Adaptation always starts from the pretrained model.**",
+    "Runtime → Run after",
+    "at least **4 distinct groups**",
+    "[A-Za-z0-9_.:-]{1,64}",
 )
+# DAC-M3: each of Sections 4-9 asks for a prediction, and Sections 5-9 plus the closing open with a worked answer.
+GUIDED_PREDICT_SECTIONS = (4, 5, 6, 7, 8, 9)
+GUIDED_MIN_WORKED_ANSWERS = 7
+GLOSSARY_TERMS = ("Relative inverse depth", "Alignment", "AbsRel", "δ1", "DPT neck and head", "Policy", "Epoch / epoch 0")
 # Direct-library use that must stay inside the carried module cell (G2: the notebook calls the
 # pipeline API, it does not reimplement it). Checked on every code cell except the embedded one.
 FORBIDDEN_OUTSIDE_MODULE = (
@@ -138,6 +172,15 @@ STALE_MARKDOWN = (
     "installed directly — there is no repository clone",
     "the cell stops with a restart instruction",
     "About a minute on the first run for the 312 MB download",
+    # DAC-M2 / DAC-m1 / DAC-m4 (review 2026-10-02): the re-run instruction that reused the adapted model, unlabelled
+    # timings, and closing text that asserted the build run's outcome as the learner's.
+    "re-run from that cell",
+    "about four minutes of model time",
+    "The build record measured about 0.4 s",
+    "About ten seconds on CPU",
+    "and watch the neck-and-head policy win",
+    "{{",
+    "}}",
 )
 # WORKSHOP-mode notebooks (DIMER Notebook Specification 2.2). They carry their own reference source, dependency
 # lock and runner and execute in an isolated environment, so they are checked for carried-source integrity and
@@ -680,6 +723,41 @@ def _validate_notebook_content(
     _check(f"https://huggingface.co/{model_id}" in markdown, f"{path.name}: references must link {model_id}")
 
 
+def _section_cells(notebook: dict, number: int) -> tuple[str, str]:
+    """(markdown, code) of the stage `## <number>. ...`: the markdown cell holding the heading and the code cell after it."""
+    cells = notebook.get("cells", [])
+    for index, cell in enumerate(cells):
+        if cell.get("cell_type") == "markdown" and f"## {number}. " in _cell_source(cell):
+            code = next((_cell_source(c) for c in cells[index + 1 :] if c.get("cell_type") == "code"), "")
+            return _cell_source(cell), code
+    raise ValidationError(f"no '## {number}.' section in the tutorial notebook")
+
+
+def _validate_guided_layer(path: Path, notebook: dict) -> None:
+    """DAC-M2 / DAC-M3: per-section predictions, worked answers, glossary terms, infrastructure-collapsed carried
+    modules, and the reset to the pretrained model before Sections 5-7 use `pipe`."""
+    for number in GUIDED_PREDICT_SECTIONS:
+        md, _code = _section_cells(notebook, number)
+        _check("**Predict before running:**" in md.split(f"## {number}. ", 1)[1], f"{path.name}: Section {number} must ask for a prediction before it runs (GDL6)")
+    markdown = "\n".join(_cell_source(c) for c in notebook.get("cells", []) if c.get("cell_type") == "markdown")
+    answers = markdown.count("<details><summary>Check your reasoning</summary>")
+    _check(answers >= GUIDED_MIN_WORKED_ANSWERS, f"{path.name}: {answers} worked answers, at least {GUIDED_MIN_WORKED_ANSWERS} expected (GDL7)")
+    glossary = markdown.split("## Glossary", 1)[-1]
+    missing = [term for term in GLOSSARY_TERMS if f"**{term}" not in glossary and f"- **{term}" not in glossary]
+    _check(not missing, f"{path.name}: glossary misses {missing}")
+    for cell in notebook.get("cells", []):
+        if cell.get("metadata", {}).get("dimer", {}).get("embedded_module"):
+            _check(cell["metadata"].get("jupyter", {}).get("source_hidden") is True, f"{path.name}: carried module cells must be collapsed (GDL11)")
+    for number in RESET_SECTIONS:
+        _md, code = _section_cells(notebook, number)
+        body = re.sub(r"def reset_to_pretrained\(\):\n(?:    [^\n]*\n|\n)*", "", _strip_comments(code))
+        first_use = min((body.find(token) for token in ("pipe.", "prior_baselines(") if token in body), default=-1)
+        _check(
+            "reset_to_pretrained()\n" in body and body.find("reset_to_pretrained()\n") < first_use,
+            f"{path.name}: Section {number} must call reset_to_pretrained() before it uses the model (DAC-M2)",
+        )
+
+
 def validate_notebooks() -> None:
     tutorials = ROOT / "tutorials"
     notebooks = sorted(p for p in tutorials.glob("*.ipynb") if p.name not in WORKSHOP_NOTEBOOKS)
@@ -694,6 +772,7 @@ def validate_notebooks() -> None:
     _validate_identity(path, code_cells, embedded, revision)
     _validate_parity(path, notebook, code_cells, build)
     _validate_notebook_content(path, code_cells, markdown, embedded)
+    _validate_guided_layer(path, notebook)
     registry = _read(tutorials / "README.md")
     _check(f"`{path.name}`" in registry, f"{path.name} missing from tutorials/README.md")
     _check(f"`{EXPECTED_PROFILE}`" in registry, f"tutorials/README.md must record `{EXPECTED_PROFILE}`")
