@@ -38,12 +38,13 @@ from .pipeline import (
     verify_snapshot,
 )
 from .samples import (
-    CORPUS_BASE_URL,
+    ARCHIVE_MEMBERS,
+    CORPUS_ARCHIVE_BYTES,
     CORPUS_BYTES,
-    CORPUS_COMMIT,
     CORPUS_LICENSE,
     CORPUS_NAME,
     CORPUS_RELEASE,
+    CORPUS_URL,
     DOMAINS,
     MAX_RECORDS,
     MIN_RECORDS,
@@ -65,13 +66,14 @@ from .samples import (
 )
 
 __all__ = [
+    "ARCHIVE_MEMBERS",
     "ARTIFACT_FORMAT",
-    "CORPUS_BASE_URL",
+    "CORPUS_ARCHIVE_BYTES",
     "CORPUS_BYTES",
-    "CORPUS_COMMIT",
     "CORPUS_LICENSE",
     "CORPUS_NAME",
     "CORPUS_RELEASE",
+    "CORPUS_URL",
     "DEFAULT_TRAINABLE_BLOCKS",
     "DEFAULT_WEIGHTS_DIR",
     "DELTA_THRESHOLD",

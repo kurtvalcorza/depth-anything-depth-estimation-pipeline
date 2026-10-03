@@ -25,7 +25,7 @@ TEMPLATE = {
     "run_all": (
         "Selecting **Run all** in a fresh supported runtime installs the pinned dependencies, stages and digest-verifies the "
         "pinned Depth Anything V2 Small snapshot (safetensors, 99 MB), fetches 40 digest-pinned DIODE validation views — "
-        "RGB, metric depth and validity mask, 312 MB in total — from the Hugging Face Hub mirror (no credential), validates "
+        "RGB, metric depth and validity mask, 312 MB in total — by pinned byte ranges of the Marigold evaluation dataset archive at ETH Zürich (no credential), validates "
         "them and draws 24 / 8 / 8 training, validation and test views by a seeded split of whole scans, runs one test view "
         "through the inference contract with an input manifest, a rejection probe and a `sample-sanity` evaluation report "
         "against its metric reference, scores the untouched checkpoint on the test split beside a constant prior and a "
@@ -89,7 +89,7 @@ TEMPLATE = {
         "What this notebook adds to inference is **supervised adaptation under an explicit policy ladder**. The "
         "dataset is real and carries metric ground truth: 40 views from the DIODE validation release (CC BY 4.0) — the "
         "first two views of each of its 20 laser-scanned scenes, 10 indoor and 10 outdoor — pinned per file by byte "
-        "size and SHA-256 as served by the Marigold evaluation mirror on the Hugging Face Hub at an immutable commit, "
+        "size and SHA-256 and read by HTTP Range requests at pinned offsets of the uncompressed DIODE validation tar in the Marigold evaluation dataset archive (ETH Zürich), "
         "fetched at run time and refused on any mismatch. Views of one scan share a scene, so the sample is split by "
         "**scan**, never by view. The carried `metrics.py` scores a prediction by **AbsRel** and **δ1** after a "
         "per-image least-squares alignment of the prediction to inverse reference depth (the standard protocol for a "
@@ -124,7 +124,7 @@ TEMPLATE = {
         "- **Data contract:** records are `{{id, image, depth, mask}}` — a PIL image (or a path to one) with sides 14..4,096 px and aspect ratio at most 4.0, a float H × W array of metric depth in metres (or a path to a `.npy`), an optional boolean H × W validity mask (missing means `depth > 0`) covering at least 5 % of the pixels, depth at most 1,000 m, ids matching `[A-Za-z0-9_.:-]{{1,64}}` and unique; a training set needs 4..2,000 records; images are de-duplicated by decoded-pixel digest and split by `scan` / `group` so views of one scene never straddle splits. Only reference pixels inside 0.6..350 m are scored. BYOD accepts a `.zip` (or a directory) holding `records.csv` and the files, and requires a non-empty `group` on every row — the notebook's automatic split is group-disjoint only because the loader refuses ungrouped rows (`load_byod_dataset(..., require_group=False)` is the explicit opt-out, without that guarantee).",
         "- **Validation is structural, not semantic:** nothing checks that a depth map belongs to its image or that its unit is metres beyond the 1,000 m ceiling — a mis-paired or mis-scaled set is trained on without complaint.",
         "- **Privacy:** Do not upload confidential or restricted data to a hosted runtime unless you are authorized to process it there — RGB-D captures of homes, workplaces or people are exactly that. The default path uploads nothing.",
-        "- **External access (data):** besides the Hub snapshot, the default path fetches 120 pinned objects — for each of 40 DIODE views the RGB PNG, the `_depth.npy` and the `_depth_mask.npy`, 312,448,846 bytes in total, one SHA-256 each in the carried `SAMPLE_RECORDS` table — from `huggingface.co/datasets/obukhovai/marigold_depth_eval` at commit `30c5b061` over HTTPS, each refused on any byte-size or SHA-256 mismatch before it is decoded; the files are DIODE's own (CC BY 4.0, Vasiljevic et al. 2019) as served by that mirror.",
+        "- **External access (data):** besides the Hub snapshot, the default path fetches 120 pinned objects — for each of 40 DIODE views the RGB PNG, the `_depth.npy` and the `_depth_mask.npy`, 312,448,846 bytes in total, one SHA-256 each in the carried `SAMPLE_RECORDS` table — by HTTPS Range requests at pinned byte offsets (`ARCHIVE_MEMBERS`) of `share.phys.ethz.ch/~pf/bingkedata/marigold/evaluation_dataset/diode/diode_val.tar` (6,400,440,320 bytes, uncompressed; a reply that is not `206 Partial Content` with the pinned `Content-Range` is refused), each refused on any byte-size or SHA-256 mismatch before it is decoded; the files are DIODE's own (CC BY 4.0, Vasiljevic et al. 2019) as served by the Marigold evaluation dataset archive at ETH Zürich PRS. (Until 2026-10 the same files, with identical digests, came from a Hugging Face Hub mirror that has since been withdrawn.)",
     ],
     "cells": [
         {
@@ -426,7 +426,7 @@ TEMPLATE = {
                 "    'model_license': MODEL_LICENSE,\n"
                 "    'snapshot': {{'path': str(WEIGHTS_DIR), 'files': snapshot['files'], 'total_bytes': snapshot.get('total_bytes'), 'fetched_this_run': fetched, 'weight_file': WEIGHTS_FILE, 'weight_format': 'safetensors, digest-verified', 'weight_sha256': weight_entry['sha256']}},\n"
                 "    'data_source': data_source,\n"
-                "    'corpus': {{'name': CORPUS_NAME, 'release': CORPUS_RELEASE, 'base_url': CORPUS_BASE_URL, 'commit': CORPUS_COMMIT, 'views': len(SAMPLE_RECORDS), 'bytes': CORPUS_BYTES, 'license': CORPUS_LICENSE}},\n"
+                "    'corpus': {{'name': CORPUS_NAME, 'release': CORPUS_RELEASE, 'url': CORPUS_URL, 'archive_bytes': CORPUS_ARCHIVE_BYTES, 'views': len(SAMPLE_RECORDS), 'bytes': CORPUS_BYTES, 'license': CORPUS_LICENSE}},\n"
                 "    'inference_contract': {{'input_manifest': input_manifest, 'sanity_checks': checks, 'probe_id': probe_record['id'], 'single_view_report': report, 'seconds': predict_seconds}},\n"
                 "    'comparison': comparison,\n"
                 "    'before_after': rows,\n"
@@ -484,7 +484,7 @@ TEMPLATE = {
         "- Upstream code: https://github.com/DepthAnything/Depth-Anything-V2\n"
         "- Depth Anything V2 paper (Yang et al., 2024): https://arxiv.org/abs/2406.09414\n"
         "- DIODE: A Dense Indoor and Outdoor DEpth Dataset (Vasiljevic et al., 2019; CC BY 4.0): https://diode-dataset.org — https://arxiv.org/abs/1908.00463\n"
-        "- Marigold evaluation mirror serving the pinned DIODE files: https://huggingface.co/datasets/obukhovai/marigold_depth_eval\n"
+        "- Marigold evaluation dataset archive (ETH Zürich PRS) serving the pinned DIODE files: https://share.phys.ethz.ch/~pf/bingkedata/marigold/evaluation_dataset/diode/diode_val.tar\n"
         "- Towards Robust Monocular Depth Estimation (MiDaS; the scale-and-shift-invariant loss and aligned evaluation, Ranftl et al., 2020): https://arxiv.org/abs/1907.01341\n"
         "- Transformers `DepthAnything` documentation: https://huggingface.co/docs/transformers/model_doc/depth_anything\n"
         "- DIMER Notebook Specification 2.0 and Model Card Specification 1.1 (fleet specs in the ml-worker repository)"

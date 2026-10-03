@@ -79,7 +79,7 @@ CODE_MARKERS = (
     "assert parity['depth_map_identical'] and abs(adapted_test['abs_rel'] - reloaded_test['abs_rel']) < 1e-9",
     "weight_entry = next(entry for entry in MANIFEST['files'] if entry['path'] == WEIGHTS_FILE)",
     "'weight_format': 'safetensors, digest-verified'",
-    "'corpus': {'name': CORPUS_NAME, 'release': CORPUS_RELEASE, 'base_url': CORPUS_BASE_URL, 'commit': CORPUS_COMMIT",
+    "'corpus': {'name': CORPUS_NAME, 'release': CORPUS_RELEASE, 'url': CORPUS_URL, 'archive_bytes': CORPUS_ARCHIVE_BYTES",
     "'model_revision': MODEL_REVISION",
     "'model_license': MODEL_LICENSE",
     "transformers.__version__",
@@ -378,7 +378,8 @@ def validate_identity_consistency() -> None:
 # that no document cites any more are rejected, so the allowlist cannot go stale.
 WEIGHT_DOCS = ("README.md", "MODEL_CARD.md", "docs/WEIGHTS.md")
 EXTERNAL_WEIGHT_BYTES: dict[int, str] = {
-    312_448_846: "DIODE subset from obukhovai/marigold_depth_eval 30c5b06, pinned files in total",
+    312_448_846: "DIODE subset: the 120 pinned files read from the Marigold evaluation archive diode_val.tar, in total",
+    6_400_440_320: "Marigold evaluation archive diode/diode_val.tar (ETH Zürich PRS), total size; the DIODE files are read from it by byte range",
 }
 EXTERNAL_WEIGHT_DIGESTS: dict[str, str] = {}
 _DIGEST = re.compile(r"(?<![0-9a-fA-F])[0-9a-f]{64}(?![0-9a-fA-F])")

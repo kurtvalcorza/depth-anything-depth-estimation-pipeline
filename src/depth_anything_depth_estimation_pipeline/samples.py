@@ -4,10 +4,13 @@ validation sample, validation, seeded scan-level splitting, BYOD loaders and CSV
 The default dataset is **real** and carries metric ground truth: 40 views from the DIODE validation release
 (Vasiljevic et al., 2019; CC BY 4.0) — the first two views in file-name order of every one of its 20 scans
 (10 indoor, 10 outdoor) — chosen a priori on 2026-09-19 and pinned here per file (RGB PNG, depth `.npy` in
-metres, validity-mask `.npy`) by byte size and SHA-256 as served by the Marigold evaluation mirror of DIODE on
-the Hugging Face Hub at an immutable commit. Every file is fetched at run time and refused on any byte-size or
-SHA-256 mismatch; the repository redistributes none of them. Views of one scan share a scene, so the sample is
-split **by scan**, never by view.
+metres, validity-mask `.npy`) by byte size and SHA-256. The files are read with HTTP Range requests at
+pinned byte offsets from the uncompressed DIODE validation tar of the Marigold evaluation dataset archive
+(ETH Zürich, Photogrammetry and Remote Sensing); the archive's total size is pinned too, and a server that
+ignores the Range header is refused. Every file is refused on any byte-size or SHA-256 mismatch; the
+repository redistributes none of them. (Until 2026-10 the same 120 files, with identical digests, were fetched
+from a Hugging Face Hub mirror that has since been withdrawn.) Views of one scan share a scene, so the sample
+is split **by scan**, never by view.
 
 A record is ``{id, image, depth, mask}``: a PIL image (or a path to one), a float32 H x W array of metric
 depth in metres (or a path to a `.npy`) and a boolean H x W validity mask (or a path; missing means
@@ -23,6 +26,8 @@ import io
 import json
 import random
 import re
+import time
+import urllib.error
 import urllib.request
 import zipfile
 from collections.abc import Mapping, Sequence
@@ -36,17 +41,18 @@ from .pipeline import MAX_ASPECT_RATIO, MAX_IMAGE_SIDE, MIN_IMAGE_SIDE, MODEL_ID
 
 CORPUS_NAME = "DIODE validation views (indoor + outdoor) with metric depth"
 CORPUS_RELEASE = (
-    "DIODE validation release as served by the Marigold evaluation mirror "
-    "(obukhovai/marigold_depth_eval @ 30c5b061, Hugging Face Hub); 40 views pinned 2026-09-19"
+    "DIODE validation release (CC BY 4.0) as served by the Marigold evaluation dataset archive at "
+    "ETH Zürich PRS (diode/diode_val.tar, read by pinned byte ranges); 40 views pinned 2026-09-19; "
+    "source moved 2026-10-03 after the earlier Hugging Face Hub mirror was withdrawn "
+    "(same files, same digests)"
 )
-CORPUS_COMMIT = "30c5b061d863e383e3ea9fa14555737a199d7ad9"
-CORPUS_BASE_URL = (
-    f"https://huggingface.co/datasets/obukhovai/marigold_depth_eval/resolve/{CORPUS_COMMIT}/diode/"
-)
+CORPUS_URL = "https://share.phys.ethz.ch/~pf/bingkedata/marigold/evaluation_dataset/diode/diode_val.tar"
+CORPUS_ARCHIVE_BYTES = 6_400_440_320  # total size of diode_val.tar; checked against every Content-Range
 CORPUS_LICENSE = "CC BY 4.0 (DIODE: A Dense Indoor and Outdoor DEpth Dataset, Vasiljevic et al., 2019)"
 CORPUS_BYTES = 312_448_846
 DOMAINS = ("indoors", "outdoor")
 FILE_SUFFIXES = (".png", "_depth.npy", "_depth_mask.npy")
+FETCH_ATTEMPTS = 3  # transport errors only; a verification failure is never retried
 
 # (record id, domain, scene, scan, file stem, then bytes + sha256 of the png, depth .npy and mask .npy)
 SAMPLE_RECORDS: tuple[tuple[str, str, str, str, str, int, str, int, str, int, str], ...] = (
@@ -572,6 +578,131 @@ SAMPLE_RECORDS: tuple[tuple[str, str, str, str, str, int, str, int, str, int, st
     ),
 )
 
+# Archive member "<domain>/<scene>/<scan>/<stem><suffix>" -> (offset of its data in diode_val.tar, byte size),
+# read from the tar headers on 2026-10-03; each size equals the SAMPLE_RECORDS pin for that file.
+ARCHIVE_MEMBERS: dict[str, tuple[int, int]] = {
+    "indoors/scene_00019/scan_00183/00019_00183_indoors_000_010.png": (4_758_314_496, 1_172_425),
+    "indoors/scene_00019/scan_00183/00019_00183_indoors_000_010_depth.npy": (4_738_998_784, 3_145_856),
+    "indoors/scene_00019/scan_00183/00019_00183_indoors_000_010_depth_mask.npy": (5_172_813_824, 3_145_856),
+    "indoors/scene_00019/scan_00183/00019_00183_indoors_000_040.png": (5_043_468_800, 1_102_623),
+    "indoors/scene_00019/scan_00183/00019_00183_indoors_000_040_depth.npy": (5_051_968_000, 3_145_856),
+    "indoors/scene_00019/scan_00183/00019_00183_indoors_000_040_depth_mask.npy": (4_810_119_168, 3_145_856),
+    "indoors/scene_00020/scan_00184/00020_00184_indoors_050_000.png": (5_488_531_968, 1_142_437),
+    "indoors/scene_00020/scan_00184/00020_00184_indoors_050_000_depth.npy": (5_440_303_104, 3_145_856),
+    "indoors/scene_00020/scan_00184/00020_00184_indoors_050_000_depth_mask.npy": (5_421_422_592, 3_145_856),
+    "indoors/scene_00020/scan_00184/00020_00184_indoors_050_020.png": (5_324_534_272, 1_017_065),
+    "indoors/scene_00020/scan_00184/00020_00184_indoors_050_020_depth.npy": (5_515_894_272, 3_145_856),
+    "indoors/scene_00020/scan_00184/00020_00184_indoors_050_020_depth_mask.npy": (5_479_091_712, 3_145_856),
+    "indoors/scene_00020/scan_00185/00020_00185_indoors_000_000.png": (5_973_846_528, 1_208_304),
+    "indoors/scene_00020/scan_00185/00020_00185_indoors_000_000_depth.npy": (5_982_654_464, 3_145_856),
+    "indoors/scene_00020/scan_00185/00020_00185_indoors_000_000_depth_mask.npy": (5_859_390_976, 3_145_856),
+    "indoors/scene_00020/scan_00185/00020_00185_indoors_000_020.png": (5_822_498_304, 1_213_267),
+    "indoors/scene_00020/scan_00185/00020_00185_indoors_000_020_depth.npy": (5_926_810_624, 3_145_856),
+    "indoors/scene_00020/scan_00185/00020_00185_indoors_000_020_depth_mask.npy": (5_834_384_896, 3_145_856),
+    "indoors/scene_00020/scan_00186/00020_00186_indoors_000_000.png": (6_268_728_320, 1_194_403),
+    "indoors/scene_00020/scan_00186/00020_00186_indoors_000_000_depth.npy": (6_160_186_880, 3_145_856),
+    "indoors/scene_00020/scan_00186/00020_00186_indoors_000_000_depth_mask.npy": (6_184_529_920, 3_145_856),
+    "indoors/scene_00020/scan_00186/00020_00186_indoors_020_000.png": (6_043_246_080, 1_171_589),
+    "indoors/scene_00020/scan_00186/00020_00186_indoors_020_000_depth.npy": (6_055_021_568, 3_145_856),
+    "indoors/scene_00020/scan_00186/00020_00186_indoors_020_000_depth_mask.npy": (6_222_867_968, 3_145_856),
+    "indoors/scene_00020/scan_00187/00020_00187_indoors_000_000.png": (5_619_173_376, 1_258_618),
+    "indoors/scene_00020/scan_00187/00020_00187_indoors_000_000_depth.npy": (5_688_883_712, 3_145_856),
+    "indoors/scene_00020/scan_00187/00020_00187_indoors_000_000_depth_mask.npy": (5_578_483_200, 3_145_856),
+    "indoors/scene_00020/scan_00187/00020_00187_indoors_000_020.png": (5_677_277_696, 1_202_574),
+    "indoors/scene_00020/scan_00187/00020_00187_indoors_000_020_depth.npy": (5_752_700_928, 3_145_856),
+    "indoors/scene_00020/scan_00187/00020_00187_indoors_000_020_depth_mask.npy": (5_667_837_440, 3_145_856),
+    "indoors/scene_00021/scan_00188/00021_00188_indoors_090_000.png": (4_400_828_416, 981_100),
+    "indoors/scene_00021/scan_00188/00021_00188_indoors_090_000_depth.npy": (4_422_673_408, 3_145_856),
+    "indoors/scene_00021/scan_00188/00021_00188_indoors_090_000_depth_mask.npy": (4_441_491_456, 3_145_856),
+    "indoors/scene_00021/scan_00188/00021_00188_indoors_090_020.png": (4_524_086_784, 1_057_542),
+    "indoors/scene_00021/scan_00188/00021_00188_indoors_090_020_depth.npy": (4_380_890_112, 3_145_856),
+    "indoors/scene_00021/scan_00188/00021_00188_indoors_090_020_depth_mask.npy": (4_391_388_160, 3_145_856),
+    "indoors/scene_00021/scan_00189/00021_00189_indoors_000_000.png": (3_914_827_776, 1_036_343),
+    "indoors/scene_00021/scan_00189/00021_00189_indoors_000_000_depth.npy": (3_856_255_488, 3_145_856),
+    "indoors/scene_00021/scan_00189/00021_00189_indoors_000_000_depth_mask.npy": (3_931_616_256, 3_145_856),
+    "indoors/scene_00021/scan_00189/00021_00189_indoors_000_020.png": (3_969_315_840, 1_075_564),
+    "indoors/scene_00021/scan_00189/00021_00189_indoors_000_020_depth.npy": (3_899_143_680, 3_145_856),
+    "indoors/scene_00021/scan_00189/00021_00189_indoors_000_020_depth_mask.npy": (3_988_241_408, 3_145_856),
+    "indoors/scene_00021/scan_00190/00021_00190_indoors_050_000.png": (4_151_209_984, 1_000_911),
+    "indoors/scene_00021/scan_00190/00021_00190_indoors_050_000_depth.npy": (4_055_428_608, 3_145_856),
+    "indoors/scene_00021/scan_00190/00021_00190_indoors_050_000_depth_mask.npy": (4_112_359_424, 3_145_856),
+    "indoors/scene_00021/scan_00190/00021_00190_indoors_050_030.png": (4_037_721_088, 996_884),
+    "indoors/scene_00021/scan_00190/00021_00190_indoors_050_030_depth.npy": (4_129_182_720, 3_145_856),
+    "indoors/scene_00021/scan_00190/00021_00190_indoors_050_030_depth_mask.npy": (4_019_810_816, 6_291_584),
+    "indoors/scene_00021/scan_00191/00021_00191_indoors_000_040.png": (4_303_347_712, 1_057_445),
+    "indoors/scene_00021/scan_00191/00021_00191_indoors_000_040_depth.npy": (4_310_699_520, 3_145_856),
+    "indoors/scene_00021/scan_00191/00021_00191_indoors_000_040_depth_mask.npy": (4_282_428_416, 3_145_856),
+    "indoors/scene_00021/scan_00191/00021_00191_indoors_010_030.png": (4_265_640_448, 1_053_502),
+    "indoors/scene_00021/scan_00191/00021_00191_indoors_010_030_depth.npy": (4_269_841_408, 3_145_856),
+    "indoors/scene_00021/scan_00191/00021_00191_indoors_010_030_depth_mask.npy": (4_218_085_376, 3_145_856),
+    "indoors/scene_00021/scan_00192/00021_00192_indoors_000_000.png": (4_577_555_456, 1_061_846),
+    "indoors/scene_00021/scan_00192/00021_00192_indoors_000_000_depth.npy": (4_557_652_992, 3_145_856),
+    "indoors/scene_00021/scan_00192/00021_00192_indoors_000_000_depth_mask.npy": (4_725_013_504, 3_145_856),
+    "indoors/scene_00021/scan_00192/00021_00192_indoors_000_020.png": (4_712_282_112, 1_057_090),
+    "indoors/scene_00021/scan_00192/00021_00192_indoors_000_020_depth.npy": (4_621_753_344, 3_145_856),
+    "indoors/scene_00021/scan_00192/00021_00192_indoors_000_020_depth_mask.npy": (4_682_905_600, 3_145_856),
+    "outdoor/scene_00022/scan_00193/00022_00193_outdoor_000_000.png": (2_277_253_632, 1_260_962),
+    "outdoor/scene_00022/scan_00193/00022_00193_outdoor_000_000_depth.npy": (2_046_825_472, 3_145_856),
+    "outdoor/scene_00022/scan_00193/00022_00193_outdoor_000_000_depth_mask.npy": (1_945_262_592, 3_145_856),
+    "outdoor/scene_00022/scan_00193/00022_00193_outdoor_000_020.png": (1_934_858_240, 1_387_923),
+    "outdoor/scene_00022/scan_00193/00022_00193_outdoor_000_020_depth.npy": (1_948_409_344, 3_145_856),
+    "outdoor/scene_00022/scan_00193/00022_00193_outdoor_000_020_depth_mask.npy": (2_020_744_192, 3_145_856),
+    "outdoor/scene_00022/scan_00194/00022_00194_outdoor_000_000.png": (1_694_580_736, 1_386_881),
+    "outdoor/scene_00022/scan_00194/00022_00194_outdoor_000_000_depth.npy": (1_679_905_280, 3_145_856),
+    "outdoor/scene_00022/scan_00194/00022_00194_outdoor_000_000_depth_mask.npy": (1_717_891_072, 6_291_584),
+    "outdoor/scene_00022/scan_00194/00022_00194_outdoor_000_020.png": (1_599_986_176, 1_550_903),
+    "outdoor/scene_00022/scan_00194/00022_00194_outdoor_000_020_depth.npy": (1_593_692_672, 3_145_856),
+    "outdoor/scene_00022/scan_00194/00022_00194_outdoor_000_020_depth_mask.npy": (1_816_351_744, 3_145_856),
+    "outdoor/scene_00022/scan_00195/00022_00195_outdoor_000_000.png": (758_732_288, 1_354_956),
+    "outdoor/scene_00022/scan_00195/00022_00195_outdoor_000_000_depth.npy": (766_380_544, 3_145_856),
+    "outdoor/scene_00022/scan_00195/00022_00195_outdoor_000_000_depth_mask.npy": (877_902_336, 3_145_856),
+    "outdoor/scene_00022/scan_00195/00022_00195_outdoor_000_020.png": (649_553_408, 1_312_039),
+    "outdoor/scene_00022/scan_00195/00022_00195_outdoor_000_020_depth.npy": (925_267_456, 3_145_856),
+    "outdoor/scene_00022/scan_00195/00022_00195_outdoor_000_020_depth_mask.npy": (716_167_680, 3_145_856),
+    "outdoor/scene_00022/scan_00196/00022_00196_outdoor_000_010.png": (105_244_672, 1_548_233),
+    "outdoor/scene_00022/scan_00196/00022_00196_outdoor_000_010_depth.npy": (118_865_408, 3_145_856),
+    "outdoor/scene_00022/scan_00196/00022_00196_outdoor_000_010_depth_mask.npy": (200_755_712, 3_145_856),
+    "outdoor/scene_00022/scan_00196/00022_00196_outdoor_000_030.png": (442_744_832, 1_581_362),
+    "outdoor/scene_00022/scan_00196/00022_00196_outdoor_000_030_depth.npy": (197_608_960, 3_145_856),
+    "outdoor/scene_00022/scan_00196/00022_00196_outdoor_000_030_depth_mask.npy": (86_364_160, 3_145_856),
+    "outdoor/scene_00022/scan_00197/00022_00197_outdoor_000_000.png": (1_468_379_136, 1_397_626),
+    "outdoor/scene_00022/scan_00197/00022_00197_outdoor_000_000_depth.npy": (1_082_345_984, 3_145_856),
+    "outdoor/scene_00022/scan_00197/00022_00197_outdoor_000_000_depth_mask.npy": (1_465_232_384, 3_145_856),
+    "outdoor/scene_00022/scan_00197/00022_00197_outdoor_010_010.png": (1_423_272_960, 1_427_912),
+    "outdoor/scene_00022/scan_00197/00022_00197_outdoor_010_010_depth.npy": (1_072_905_728, 3_145_856),
+    "outdoor/scene_00022/scan_00197/00022_00197_outdoor_010_010_depth_mask.npy": (1_208_926_720, 3_145_856),
+    "outdoor/scene_00023/scan_00198/00023_00198_outdoor_000_020.png": (2_370_625_536, 1_196_280),
+    "outdoor/scene_00023/scan_00198/00023_00198_outdoor_000_020_depth.npy": (2_309_782_016, 3_145_856),
+    "outdoor/scene_00023/scan_00198/00023_00198_outdoor_000_020_depth_mask.npy": (2_429_483_008, 3_145_856),
+    "outdoor/scene_00023/scan_00198/00023_00198_outdoor_070_020.png": (2_345_978_880, 1_153_475),
+    "outdoor/scene_00023/scan_00198/00023_00198_outdoor_070_020_depth.npy": (2_303_207_936, 3_145_856),
+    "outdoor/scene_00023/scan_00198/00023_00198_outdoor_070_020_depth_mask.npy": (2_415_824_384, 6_291_584),
+    "outdoor/scene_00023/scan_00199/00023_00199_outdoor_000_020.png": (3_083_156_992, 1_443_825),
+    "outdoor/scene_00023/scan_00199/00023_00199_outdoor_000_020_depth.npy": (3_005_661_696, 3_145_856),
+    "outdoor/scene_00023/scan_00199/00023_00199_outdoor_000_020_depth_mask.npy": (3_036_814_336, 3_145_856),
+    "outdoor/scene_00023/scan_00199/00023_00199_outdoor_010_000.png": (2_916_634_112, 1_401_671),
+    "outdoor/scene_00023/scan_00199/00023_00199_outdoor_010_000_depth.npy": (2_871_063_552, 3_145_856),
+    "outdoor/scene_00023/scan_00199/00023_00199_outdoor_010_000_depth_mask.npy": (2_913_487_360, 3_145_856),
+    "outdoor/scene_00023/scan_00200/00023_00200_outdoor_000_010.png": (2_790_487_040, 1_103_637),
+    "outdoor/scene_00023/scan_00200/00023_00200_outdoor_000_010_depth.npy": (2_651_970_560, 3_145_856),
+    "outdoor/scene_00023/scan_00200/00023_00200_outdoor_000_010_depth_mask.npy": (2_613_210_112, 3_145_856),
+    "outdoor/scene_00023/scan_00200/00023_00200_outdoor_000_050.png": (2_772_111_872, 1_225_980),
+    "outdoor/scene_00023/scan_00200/00023_00200_outdoor_000_050_depth.npy": (2_811_660_288, 3_145_856),
+    "outdoor/scene_00023/scan_00200/00023_00200_outdoor_000_050_depth_mask.npy": (2_830_306_816, 3_145_856),
+    "outdoor/scene_00024/scan_00201/00024_00201_outdoor_000_000.png": (3_133_303_808, 1_916_342),
+    "outdoor/scene_00024/scan_00201/00024_00201_outdoor_000_000_depth.npy": (3_146_572_288, 3_145_856),
+    "outdoor/scene_00024/scan_00201/00024_00201_outdoor_000_000_depth_mask.npy": (3_180_124_672, 3_145_856),
+    "outdoor/scene_00024/scan_00201/00024_00201_outdoor_000_020.png": (3_449_266_176, 1_842_876),
+    "outdoor/scene_00024/scan_00201/00024_00201_outdoor_000_020_depth.npy": (3_267_041_792, 3_145_856),
+    "outdoor/scene_00024/scan_00201/00024_00201_outdoor_000_020_depth_mask.npy": (3_318_727_168, 3_145_856),
+    "outdoor/scene_00024/scan_00202/00024_00202_outdoor_000_030.png": (3_772_593_664, 1_911_126),
+    "outdoor/scene_00024/scan_00202/00024_00202_outdoor_000_030_depth.npy": (3_604_232_704, 3_145_856),
+    "outdoor/scene_00024/scan_00202/00024_00202_outdoor_000_030_depth_mask.npy": (3_613_672_960, 3_145_856),
+    "outdoor/scene_00024/scan_00202/00024_00202_outdoor_070_010.png": (3_582_332_416, 1_877_641),
+    "outdoor/scene_00024/scan_00202/00024_00202_outdoor_070_010_depth.npy": (3_636_795_392, 3_145_856),
+    "outdoor/scene_00024/scan_00202/00024_00202_outdoor_070_010_depth_mask.npy": (3_562_909_696, 3_145_856),
+}
+
 DEFAULT_CACHE_DIR = Path("weights") / "diode-sample"  # working-directory-relative, like the notebook
 SAMPLE_SEED = 42
 SAMPLE_SPLIT = {"train": 6, "validation": 2, "test": 2}  # scans per domain; 2 domains x 2 views -> 24 / 8 / 8
@@ -586,8 +717,13 @@ def _sha256_bytes(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
+def member_path(domain: str, scene: str, scan: str, stem: str, suffix: str) -> str:
+    return f"{domain}/{scene}/{scan}/{stem}{suffix}"
+
+
 def file_url(domain: str, scene: str, scan: str, stem: str, suffix: str) -> str:
-    return f"{CORPUS_BASE_URL}{domain}/{scene}/{scan}/{stem}{suffix}"
+    """Provenance URL of one pinned file: the archive URL with the tar member path as its fragment."""
+    return f"{CORPUS_URL}#{member_path(domain, scene, scan, stem, suffix)}"
 
 
 def _pins(record: tuple) -> dict[str, tuple[int, str]]:
@@ -598,8 +734,54 @@ def _pins(record: tuple) -> dict[str, tuple[int, str]]:
     }
 
 
-def fetch_corpus(*, cache_dir: str | Path | None = None, fetcher: Any = None) -> dict[str, dict[str, bytes]]:
-    """Return every pinned file (bytes keyed by record id, then suffix) from the cache or the Hub mirror."""
+def _header(response: Any, name: str) -> str:
+    headers = getattr(response, "headers", None)
+    value = headers.get(name) if headers is not None else None
+    return "" if value is None else str(value).strip()
+
+
+def _read_range(member: str, offset: int, size: int, opener: Any) -> bytes:
+    """One HTTP Range read of `size` bytes at `offset`; refuses a non-206 reply or a wrong Content-Range."""
+    last = offset + size - 1
+    request = urllib.request.Request(
+        CORPUS_URL,
+        headers={"User-Agent": "dimer-depth-anything-tutorial/1.0", "Range": f"bytes={offset}-{last}"},
+    )
+    for attempt in range(1, FETCH_ATTEMPTS + 1):
+        try:
+            with opener(request, timeout=300) as response:
+                status = getattr(response, "status", None) or response.getcode()
+                if status != 206:
+                    raise ValueError(
+                        f"{member}: the archive server answered HTTP {status} to a Range request, not 206 "
+                        "(Partial Content); refusing, because the reply would not be the pinned byte range"
+                    )
+                expected = f"bytes {offset}-{last}/{CORPUS_ARCHIVE_BYTES}"
+                content_range = _header(response, "Content-Range")
+                if content_range != expected:
+                    raise ValueError(
+                        f"{member}: Content-Range {content_range or '(missing)'!r}, expected {expected!r} "
+                        "(the archive is not the pinned diode_val.tar, or the range was not honoured)"
+                    )
+                length = _header(response, "Content-Length")
+                if length and length != str(size):
+                    raise ValueError(f"{member}: Content-Length {length}, expected {size}")
+                return response.read(size + 1)
+        except (urllib.error.URLError, ConnectionError, TimeoutError):
+            if attempt == FETCH_ATTEMPTS:
+                raise
+            time.sleep(5 * attempt)
+    raise AssertionError("unreachable")
+
+
+def fetch_corpus(*, cache_dir: str | Path | None = None, opener: Any = None) -> dict[str, dict[str, bytes]]:
+    """Return every pinned file (bytes keyed by record id, then suffix) from the cache or the archive.
+
+    A missing or stale cached file is read from ``CORPUS_URL`` with one HTTP Range request at its pinned
+    ``ARCHIVE_MEMBERS`` offset, then verified against its pinned byte size and SHA-256 before it is cached.
+    ``opener`` replaces ``urllib.request.urlopen`` (tests pass a fake; no network is needed).
+    """
+    open_url = opener if opener is not None else urllib.request.urlopen
     cache = Path(cache_dir) if cache_dir is not None else DEFAULT_CACHE_DIR
     cache.mkdir(parents=True, exist_ok=True)
     out: dict[str, dict[str, bytes]] = {}
@@ -610,19 +792,17 @@ def fetch_corpus(*, cache_dir: str | Path | None = None, fetcher: Any = None) ->
             local = cache / f"{stem}{suffix}"
             data = local.read_bytes() if local.is_file() else b""
             if len(data) != size or _sha256_bytes(data) != digest:
-                url = file_url(domain, scene, scan, stem, suffix)
-                if fetcher is not None:
-                    data = fetcher(url)
-                else:
-                    request = urllib.request.Request(
-                        url, headers={"User-Agent": "dimer-depth-anything-tutorial/1.0"}
-                    )
-                    with urllib.request.urlopen(request, timeout=300) as response:  # noqa: S310 (pinned https URL)
-                        data = response.read()
+                member = member_path(domain, scene, scan, stem, suffix)
+                if member not in ARCHIVE_MEMBERS:
+                    raise ValueError(f"{rid} ({member}): no pinned archive offset")
+                offset, member_size = ARCHIVE_MEMBERS[member]
+                if member_size != size:
+                    raise ValueError(f"{rid} ({member}): archive pin {member_size} B, file pin {size} B")
+                data = _read_range(member, offset, size, open_url)
                 if len(data) != size or _sha256_bytes(data) != digest:
                     raise ValueError(
-                        f"{rid} ({stem}{suffix}): fetched {len(data)} bytes with sha256 "
-                        f"{_sha256_bytes(data)[:16]}…, pinned {size} / {digest[:16]}…"
+                        f"{rid} ({member}): fetched {len(data)} bytes with sha256 "
+                        f"{_sha256_bytes(data)[:16]}…, pinned {size} / {digest[:16]}…; refusing the file"
                     )
                 local.write_bytes(data)
             out[rid][suffix] = data
@@ -694,13 +874,13 @@ def build_sample_dataset(
 def fetch_sample_dataset(
     *,
     cache_dir: str | Path | None = None,
-    fetcher: Any = None,
+    opener: Any = None,
     seed: int = SAMPLE_SEED,
     sizes: Mapping[str, int] | None = None,
 ) -> dict[str, list[dict[str, Any]]]:
     """The tutorial splits from the pinned corpus."""
     return build_sample_dataset(
-        read_corpus(fetch_corpus(cache_dir=cache_dir, fetcher=fetcher)), seed=seed, sizes=sizes
+        read_corpus(fetch_corpus(cache_dir=cache_dir, opener=opener)), seed=seed, sizes=sizes
     )
 
 
