@@ -1,8 +1,8 @@
 """Offline tests for the depth-labelled dataset contract, the pinned DIODE record table and reader, the seeded
 scan-level split, the aligned AbsRel / δ1 metrics with the two priors, BYOD loaders (directory and zip), the
 injected-runner evaluation path, artifact-manifest rejections and adapt() argument validation. No model
-library is loaded by the fake pipeline; the corpus is served through an injected fetcher of small synthetic
-PNG / npy triples."""
+library is loaded by the fake pipeline; the corpus is served by a fake HTTP opener that answers Range requests
+from a synthetic in-memory archive of small PNG / npy triples (no network)."""
 
 from __future__ import annotations
 
@@ -11,6 +11,7 @@ import hashlib
 import io
 import json
 import zipfile
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -99,9 +100,44 @@ def _pipeline_without_model():
     return DepthAnythingPipeline(_fake_runner, "cpu")
 
 
+class _FakeResponse:
+    def __init__(self, status: int, headers: dict[str, str], body: bytes):
+        self.status, self.headers, self._body = status, headers, body
+
+    def read(self, amount: int = -1) -> bytes:
+        return self._body if amount < 0 else self._body[:amount]
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        return False
+
+
+class FakeArchive:
+    """A fake `urlopen` serving byte ranges of an in-memory tar-like blob; records each requested Range."""
+
+    def __init__(self, blob: bytes, *, status: int = 206, total: int | None = None, tamper: bool = False):
+        self.blob, self.status, self.tamper = blob, status, tamper
+        self.total = len(blob) if total is None else total
+        self.ranges: list[tuple[str, int, int]] = []
+
+    def __call__(self, request, timeout=None):
+        first, last = (int(x) for x in request.get_header("Range").removeprefix("bytes=").split("-"))
+        self.ranges.append((request.full_url, first, last))
+        if self.status != 206:  # a server that ignores Range sends the whole archive with 200
+            return _FakeResponse(self.status, {"Content-Length": str(len(self.blob))}, self.blob)
+        body = self.blob[first : last + 1]
+        if self.tamper:
+            body = bytes([body[0] ^ 0xFF]) + body[1:]
+        headers = {"Content-Range": f"bytes {first}-{last}/{self.total}", "Content-Length": str(len(body))}
+        return _FakeResponse(206, headers, body)
+
+
 def _pin(monkeypatch, views_per_scan=2, scans_per_domain=4):
-    """Replace the pinned table with synthetic scenes via an injected fetcher (files keyed by URL)."""
-    files = {}
+    """Replace the pinned table and archive offsets with synthetic scenes packed into one fake archive."""
+    blob = bytearray(b"\0" * 512)
+    members = {}
     table = []
     for d, domain in enumerate(("indoors", "outdoor")):
         for s in range(scans_per_domain):
@@ -115,13 +151,16 @@ def _pin(monkeypatch, views_per_scan=2, scans_per_domain=4):
                     "_depth_mask.npy": _npy(mask.astype(np.float32)),
                 }
                 for suffix, data in blobs.items():
-                    files[sm.file_url(domain, scene, scan, stem, suffix)] = data
+                    members[sm.member_path(domain, scene, scan, stem, suffix)] = (len(blob), len(data))
+                    blob += data + b"\0" * (-len(data) % 512 + 512)
                 row = [f"view-{len(table):03d}", domain, scene, scan, stem]
                 for suffix in sm.FILE_SUFFIXES:
                     row += [len(blobs[suffix]), hashlib.sha256(blobs[suffix]).hexdigest()]
                 table.append(tuple(row))
     monkeypatch.setattr(sm, "SAMPLE_RECORDS", tuple(table))
-    return files
+    monkeypatch.setattr(sm, "ARCHIVE_MEMBERS", members)
+    monkeypatch.setattr(sm, "CORPUS_ARCHIVE_BYTES", len(blob))
+    return FakeArchive(bytes(blob))
 
 
 # --- pinned table and reader --------------------------------------------------------------------------
@@ -141,44 +180,106 @@ def test_pinned_record_table_is_complete_and_traceable():
         scans[(r[1], r[3])] += 1
     assert len(scans) == 20 and set(scans.values()) == {2}  # two views of every scan
     assert sum(1 for d, _ in scans if d == "indoors") == 10
-    assert sm.file_url(*SAMPLE_RECORDS[0][1:5], ".png").startswith(sm.CORPUS_BASE_URL)
-    assert sm.CORPUS_COMMIT in sm.CORPUS_BASE_URL and len(sm.CORPUS_COMMIT) == 40
+    assert sm.file_url(*SAMPLE_RECORDS[0][1:5], ".png").startswith(sm.CORPUS_URL + "#indoors/")
+    assert sm.CORPUS_URL.startswith("https://") and sm.CORPUS_URL.endswith("/diode/diode_val.tar")
     assert sum(r[5] + r[7] + r[9] for r in SAMPLE_RECORDS) == sm.CORPUS_BYTES
     assert sum(SAMPLE_SPLIT.values()) == 10 and set(SAMPLE_SPLIT) == {"train", "validation", "test"}
 
 
-def test_fetch_corpus_verifies_each_file_and_caches(tmp_path, monkeypatch, forbid_model_imports):
-    files = _pin(monkeypatch)
-    calls = []
+def test_archive_members_pin_every_file_once_inside_the_archive():
+    """Every pinned file has exactly one (offset, size) in the archive; sizes agree with SAMPLE_RECORDS."""
+    expected = {
+        sm.member_path(*r[1:5], suffix): size
+        for r in SAMPLE_RECORDS
+        for suffix, (size, _) in sm._pins(r).items()
+    }
+    assert len(expected) == 120 and set(sm.ARCHIVE_MEMBERS) == set(expected)
+    assert all(sm.ARCHIVE_MEMBERS[m][1] == size for m, size in expected.items())
+    spans = sorted((offset, offset + size) for offset, size in sm.ARCHIVE_MEMBERS.values())
+    assert all(offset % 512 == 0 for offset, _ in spans)  # tar data blocks start on 512-byte boundaries
+    assert all(a_end <= b_start for (_, a_end), (b_start, _) in zip(spans, spans[1:], strict=False))
+    assert spans[-1][1] <= sm.CORPUS_ARCHIVE_BYTES == 6_400_440_320
+    assert sum(size for _, size in sm.ARCHIVE_MEMBERS.values()) == sm.CORPUS_BYTES
 
-    def fetcher(url):
-        calls.append(url)
-        return files[url]
 
-    corpus = fetch_corpus(cache_dir=tmp_path, fetcher=fetcher)
+def test_fetch_corpus_requests_pinned_ranges_verifies_and_caches(tmp_path, monkeypatch, forbid_model_imports):
+    archive = _pin(monkeypatch)
+    corpus = fetch_corpus(cache_dir=tmp_path, opener=archive)
     assert len(corpus) == 16 and all(set(v) == set(sm.FILE_SUFFIXES) for v in corpus.values())
-    assert fetch_corpus(cache_dir=tmp_path, fetcher=fetcher) == corpus and len(calls) == 48
-    assert all(u.startswith(sm.CORPUS_BASE_URL) for u in calls)
-    with pytest.raises(ValueError, match="pinned"):
-        fetch_corpus(cache_dir=tmp_path / "other", fetcher=lambda url: b"tampered")
+    asked = sorted((first, last - first + 1) for _, first, last in archive.ranges)
+    assert asked == sorted(sm.ARCHIVE_MEMBERS.values()) and len(asked) == 48
+    assert all(url == sm.CORPUS_URL for url, _, _ in archive.ranges)
+    record = sm.SAMPLE_RECORDS[0]
+    offset, size = sm.ARCHIVE_MEMBERS[sm.member_path(*record[1:5], ".png")]
+    assert corpus["view-000"][".png"] == archive.blob[offset : offset + size]
+    assert fetch_corpus(cache_dir=tmp_path, opener=archive) == corpus and len(archive.ranges) == 48  # cached
+
+
+def test_fetch_corpus_refuses_a_server_that_ignores_range(tmp_path, monkeypatch, forbid_model_imports):
+    archive = _pin(monkeypatch)
+    archive.status = 200
+    with pytest.raises(ValueError, match=r"HTTP 200 .*not 206"):
+        fetch_corpus(cache_dir=tmp_path, opener=archive)
+    assert not list(tmp_path.iterdir())  # nothing cached
+
+
+def test_fetch_corpus_refuses_a_different_archive_size(tmp_path, monkeypatch, forbid_model_imports):
+    archive = _pin(monkeypatch)
+    archive.total += 512
+    with pytest.raises(ValueError, match="Content-Range"):
+        fetch_corpus(cache_dir=tmp_path, opener=archive)
+
+
+def test_fetch_corpus_refuses_a_digest_mismatch_naming_the_file(tmp_path, monkeypatch, forbid_model_imports):
+    archive = _pin(monkeypatch)
+    archive.tamper = True
+    first = sm.SAMPLE_RECORDS[0]
+    member = sm.member_path(*first[1:5], ".png")
+    with pytest.raises(ValueError, match=rf"view-000 \({member}\): fetched {first[5]} bytes .*refusing"):
+        fetch_corpus(cache_dir=tmp_path, opener=archive)
+    assert not list(tmp_path.iterdir())
+
+
+def test_fetch_corpus_refuses_bytes_read_at_a_wrong_offset(tmp_path, monkeypatch, forbid_model_imports):
+    archive = _pin(monkeypatch)
+    key = next(iter(sm.ARCHIVE_MEMBERS))
+    offset, size = sm.ARCHIVE_MEMBERS[key]
+    sm.ARCHIVE_MEMBERS[key] = (offset + 1, size)  # wrong offset: right length, wrong bytes
+    with pytest.raises(ValueError, match="sha256"):
+        fetch_corpus(cache_dir=tmp_path, opener=archive)
+
+
+def test_withdrawn_hub_mirror_is_not_referenced_by_code_or_notebooks():
+    """The withdrawn Hub mirror may appear only in docs/ history notes, not in src/, tools/ or tutorials/."""
+    root = Path(__file__).resolve().parents[1]
+    withdrawn = ("obukhovai/marigold_depth_eval", "30c5b061d863e383e3ea9fa14555737a199d7ad9")
+    hits = [
+        f"{path.relative_to(root).as_posix()}: {needle}"
+        for folder in ("src", "tools", "tutorials")
+        for path in sorted((root / folder).rglob("*"))
+        if path.is_file() and path.suffix in {".py", ".ipynb", ".md", ".json", ".txt"}
+        for needle in withdrawn
+        if needle in path.read_text(encoding="utf-8", errors="replace")
+    ]
+    assert hits == []
 
 
 def test_read_corpus_decodes_records_with_provenance(tmp_path, monkeypatch, forbid_model_imports):
-    files = _pin(monkeypatch)
-    corpus = read_corpus(fetch_corpus(cache_dir=tmp_path, fetcher=lambda url: files[url]))
+    archive = _pin(monkeypatch)
+    corpus = read_corpus(fetch_corpus(cache_dir=tmp_path, opener=archive))
     first = corpus[0]
     assert first["id"] == "view-000" and first["domain"] == "indoors" and first["scan"] == "scan_0000"
     assert isinstance(first["image"], Image.Image) and first["image"].size == (W, H)
     assert first["depth"].shape == (H, W) and first["depth"].dtype == np.float32
     assert first["mask"].dtype == bool and not first["mask"][0, 0] and first["mask"][10, 10]
-    assert first["source_url"].endswith(".png")
+    assert first["source_url"] == f"{sm.CORPUS_URL}#indoors/scene_0000/scan_0000/scene_0000_scan_0000_000.png"
     with pytest.raises(ValueError, match="missing"):
         read_corpus({})
 
 
 def test_sample_split_is_by_scan_seeded_and_disjoint(tmp_path, monkeypatch, forbid_model_imports):
-    files = _pin(monkeypatch)
-    corpus = read_corpus(fetch_corpus(cache_dir=tmp_path, fetcher=lambda url: files[url]))
+    archive = _pin(monkeypatch)
+    corpus = read_corpus(fetch_corpus(cache_dir=tmp_path, opener=archive))
     sizes = {"train": 2, "validation": 1, "test": 1}
     splits = build_sample_dataset(corpus, seed=42, sizes=sizes)
     assert check_split_disjoint(splits) == {"train": 8, "validation": 4, "test": 4}
@@ -203,10 +304,10 @@ def test_sample_split_is_by_scan_seeded_and_disjoint(tmp_path, monkeypatch, forb
         check_split_disjoint({"train": [splits["train"][0]], "test": [other_view]})
 
 
-def test_fetch_sample_dataset_end_to_end_with_injected_fetcher(tmp_path, monkeypatch, forbid_model_imports):
-    files = _pin(monkeypatch)
+def test_fetch_sample_dataset_end_to_end_with_fake_opener(tmp_path, monkeypatch, forbid_model_imports):
+    archive = _pin(monkeypatch)
     splits = fetch_sample_dataset(
-        cache_dir=tmp_path, fetcher=lambda url: files[url], sizes={"train": 2, "validation": 1, "test": 1}
+        cache_dir=tmp_path, opener=archive, sizes={"train": 2, "validation": 1, "test": 1}
     )
     manifests = {name: validate_dataset(part) for name, part in splits.items()}
     assert manifests["train"]["n_records"] == 8 and manifests["train"]["scans"] == 4

@@ -1,6 +1,6 @@
 """Static release-asset validation for the Depth Anything V2 Small relative-depth DIMER pipeline.
 
-Checks the STANDALONE tutorial notebook (DIMER Notebook Specification 2.0 §4), the tutorial
+Checks the STANDALONE tutorial notebook (DIMER Notebook Specification 2.2 §4), the tutorial
 registry, model card, README, STATUS.md and weight documentation for source conformance and
 cross-document identity consistency, and runs the generator parity checks (PAR1–PAR3).
 
@@ -79,7 +79,7 @@ CODE_MARKERS = (
     "assert parity['depth_map_identical'] and abs(adapted_test['abs_rel'] - reloaded_test['abs_rel']) < 1e-9",
     "weight_entry = next(entry for entry in MANIFEST['files'] if entry['path'] == WEIGHTS_FILE)",
     "'weight_format': 'safetensors, digest-verified'",
-    "'corpus': {'name': CORPUS_NAME, 'release': CORPUS_RELEASE, 'base_url': CORPUS_BASE_URL, 'commit': CORPUS_COMMIT",
+    "'corpus': {'name': CORPUS_NAME, 'release': CORPUS_RELEASE, 'url': CORPUS_URL, 'archive_bytes': CORPUS_ARCHIVE_BYTES",
     "'model_revision': MODEL_REVISION",
     "'model_license': MODEL_LICENSE",
     "transformers.__version__",
@@ -128,10 +128,17 @@ FORBIDDEN_OUTSIDE_MODULE = (
 # ---------------------------------------------------------------------------
 # Shared checks. Everything below is source/structure validation only. Passing
 # these checks is NOT clean-runtime execution evidence under DIMER Notebook
-# Specification 2.0; see docs/release-verification.md for the release gate.
+# Specification 2.2; see docs/release-verification.md for the release gate.
 # ---------------------------------------------------------------------------
 
-NOTEBOOK_SPEC = "2.0"
+# 2.2 since 2026-10-03: the tutorial runs in the uv isolated environment (generator /2.1), no in-kernel install.
+NOTEBOOK_SPEC = "2.2"
+# Learner-facing text of the former in-kernel install that must not come back.
+STALE_MARKDOWN = (
+    "installed directly — there is no repository clone",
+    "the cell stops with a restart instruction",
+    "About a minute on the first run for the 312 MB download",
+)
 # WORKSHOP-mode notebooks (DIMER Notebook Specification 2.2). They carry their own reference source, dependency
 # lock and runner and execute in an isolated environment, so they are checked for carried-source integrity and
 # for byte parity of the carried Depth Anything modules, manifest and licence with the package (line endings
@@ -378,7 +385,8 @@ def validate_identity_consistency() -> None:
 # that no document cites any more are rejected, so the allowlist cannot go stale.
 WEIGHT_DOCS = ("README.md", "MODEL_CARD.md", "docs/WEIGHTS.md")
 EXTERNAL_WEIGHT_BYTES: dict[int, str] = {
-    312_448_846: "DIODE subset from obukhovai/marigold_depth_eval 30c5b06, pinned files in total",
+    312_448_846: "DIODE subset: the 120 pinned files read from the Marigold evaluation archive diode_val.tar, in total",
+    6_400_440_320: "Marigold evaluation archive diode/diode_val.tar (ETH Zürich PRS), total size; the DIODE files are read from it by byte range",
 }
 EXTERNAL_WEIGHT_DIGESTS: dict[str, str] = {}
 _DIGEST = re.compile(r"(?<![0-9a-fA-F])[0-9a-f]{64}(?![0-9a-fA-F])")
@@ -643,7 +651,20 @@ def _validate_notebook_content(
     _check(not missing, f"{path.name}: missing required source markers: {missing}")
     present = [label for label, pattern in FORBIDDEN_PATTERNS if pattern.search(code)]
     _check(not present, f"{path.name}: forbidden/insecure source: {present}")
-    leaked = [marker for marker in FORBIDDEN_OUTSIDE_MODULE if marker in outside]
+    # The kernel install cell downloads the pinned uv wheel and verifies its size and SHA-256 (uv isolated
+    # environment); it is the only cell outside the carried modules allowed to use urllib.request.
+    kernel = {index for index, source, _tree in code_cells if "# dimer: kernel cell" in source}
+    _check(len(kernel) == 2, f"{path.name}: exactly the install and router cells run in the kernel, found {sorted(kernel)}")
+    learner = "\n".join(text for index, text in stripped.items() if index not in embedded and index not in kernel)
+    kernel_raw = [source for index, source, _tree in code_cells if index in kernel]
+    leaked = [marker for marker in FORBIDDEN_OUTSIDE_MODULE if marker in learner]
+    leaked += [m for m in FORBIDDEN_OUTSIDE_MODULE if m != "urllib.request" and any(m in _strip_comments(k) for k in kernel_raw)]
+    install = next((k for k in kernel_raw if "LOCK_TEXT = r" in k), "")
+    for needed in ("'--managed-python'", "'--require-hashes'", "'--only-binary'", "':all:'", "UV_SHA256", "LOCK_SHA256", "platform.machine() != 'x86_64'"):
+        _check(needed.replace("'", '"') in install, f"{path.name}: the isolated install cell must use {needed} (uv isolated environment)")
+    _check("from IPython" not in learner, f"{path.name}: learner cells run in the isolated environment, which has no IPython; use display()")
+    stale = [marker for marker in STALE_MARKDOWN if marker in markdown]
+    _check(not stale, f"{path.name}: stale learner-facing text: {stale}")
     _check(not leaked, f"{path.name}: direct library use outside the carried module cell (G2): {leaked}")
     _check(
         f"pipe = {MODEL_LOAD_EXPR}" in outside,

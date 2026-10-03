@@ -155,5 +155,5 @@ Prohibited even where the model would work: covert surveillance or tracking of p
 - Upstream model page: https://huggingface.co/depth-anything/Depth-Anything-V2-Small-hf
 - Upstream code: https://github.com/DepthAnything/Depth-Anything-V2
 - Transformers `DepthAnything` documentation: https://huggingface.co/docs/transformers/model_doc/depth_anything
-- Vasiljevic et al., *DIODE: A Dense Indoor and Outdoor DEpth Dataset*, arXiv:1908.00463 (CC BY 4.0) — https://diode-dataset.org — served for the tutorial by the Marigold evaluation mirror https://huggingface.co/datasets/obukhovai/marigold_depth_eval
+- Vasiljevic et al., *DIODE: A Dense Indoor and Outdoor DEpth Dataset*, arXiv:1908.00463 (CC BY 4.0) — https://diode-dataset.org — served for the tutorial by the Marigold evaluation dataset archive at ETH Zürich PRS (https://share.phys.ethz.ch/~pf/bingkedata/marigold/evaluation_dataset/diode/diode_val.tar, read by pinned byte ranges; the earlier Hugging Face Hub mirror was withdrawn in 2026-10)
 - Ranftl et al., *Towards Robust Monocular Depth Estimation* (MiDaS; scale-and-shift-invariant loss and aligned evaluation), arXiv:1907.01341 — https://arxiv.org/abs/1907.01341
