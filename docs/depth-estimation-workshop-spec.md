@@ -63,7 +63,7 @@ Each substantive experiment follows: orient → Input → Model/System → Outpu
 
 ## 4. Data and split contract
 
-Reuse the existing 120-file RGB/depth/validity manifest: 40 views, 20 scans, **6 scenes**, 20 indoor and 20 outdoor views. Source is DIODE validation via `obukhovai/marigold_depth_eval` at `30c5b061d863e383e3ea9fa14555737a199d7ad9`; existing declared payload is 312,448,846 bytes. Every file has byte-size and SHA-256 checks. Cite DIODE (Vasiljevic et al., 2019), CC BY 4.0 as recorded in the source; verify pinned attribution at build time.
+Reuse the existing 120-file RGB/depth/validity manifest: 40 views, 20 scans, **6 scenes**, 20 indoor and 20 outdoor views. Source is DIODE validation, read by HTTP Range requests at pinned byte offsets (`samples.ARCHIVE_MEMBERS`) from the uncompressed `diode_val.tar` of the Marigold evaluation dataset archive at ETH Zürich PRS (`https://share.phys.ethz.ch/~pf/bingkedata/marigold/evaluation_dataset/diode/diode_val.tar`, 6,400,440,320 bytes; a non-206 reply or a different `Content-Range` total is refused); existing declared payload is 312,448,846 bytes. (Corpus source change, 2026-10-03: the earlier Hugging Face Hub mirror `obukhovai/marigold_depth_eval` at `30c5b061` was withdrawn; the same 120 files have identical digests in the ETH archive, so the per-file pins are unchanged.) Every file has byte-size and SHA-256 checks. Cite DIODE (Vasiljevic et al., 2019), CC BY 4.0 as recorded in the source; verify pinned attribution at build time.
 
 The source sample is selected independently of model performance. Freeze this scene assignment before model execution:
 

@@ -37,7 +37,8 @@ def tree(tmp_path: Path) -> Path:
 
 
 def _carried_cell(notebook: dict) -> dict:
-    return next(c for c in notebook["cells"] if "".join(c["source"]).startswith("CARRIED_FILES = "))
+    # The carried cell opens with a Colab `# @title Infrastructure: ...` line (2026-10-02 review, DEP-m1).
+    return next(c for c in notebook["cells"] if "\nCARRIED_FILES = " in "\n" + "".join(c["source"]))
 
 
 def _edit(root: Path, mutate) -> None:
