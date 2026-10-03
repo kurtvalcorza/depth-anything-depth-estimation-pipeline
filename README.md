@@ -64,7 +64,7 @@ weights/diode-sample/        # git-ignored run-time cache of the 40 pinned DIODE
 
 ## Release status
 
-**Release-grade** — the `E2E` notebook blob `f3809066` (committed at `e777e2c`) executed top-to-bottom in a clean Kaggle Tesla T4 runtime on 2026-09-19 (11/11 ok (1 restart after install cell), 312.3 s); the record is in `docs/release-verification.md` and `STATUS.md`. Static and unit checks — including the standalone generator parity checks — are necessary but were never the evidence; the hosted run is. A later change to the carried modules or the notebook returns the status to Candidate until re-verified.
+**Candidate** — the `E2E` tutorial notebook was regenerated on 2026-10-03 (blob `b3e9ed6b`) because the DIODE mirror it fetched from was withdrawn; it now reads the same 120 pinned files (identical SHA-256s) from the Marigold evaluation tar. The earlier Release-grade record (blob `f3809066` at `e777e2c`, clean Kaggle Tesla T4 run on 2026-09-19, in `docs/release-verification.md`) no longer matches the file, so the status is Candidate until a hosted run of the new blob is recorded. Previously: the `E2E` notebook blob `f3809066` (committed at `e777e2c`) executed top-to-bottom in a clean Kaggle Tesla T4 runtime on 2026-09-19 (11/11 ok (1 restart after install cell), 312.3 s); the record is in `docs/release-verification.md` and `STATUS.md`. Static and unit checks — including the standalone generator parity checks — are necessary but were never the evidence; the hosted run is. A later change to the carried modules or the notebook returns the status to Candidate until re-verified.
 
 ## Documentation
 
