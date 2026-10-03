@@ -452,7 +452,8 @@ def test_learner_cells_run_against_the_stand_in_outputs(ws, run, monkeypatch, ca
 
 
 def test_review_revision_is_recorded():
-    revision = NB["metadata"]["dimer"]["review_revisions"][-1]
+    # Later in-place revisions (e.g. the 2026-10-03 carrier layout split) append after this entry.
+    revision = next(r for r in NB["metadata"]["dimer"]["review_revisions"] if "findings_fixed" in r)
     assert revision["reviewed_commit"] == "5f6b516c0ca532a6fefa379a280e9e127cec5d37"
     assert revision["findings_fixed"] == [
         "DEP-M1",
