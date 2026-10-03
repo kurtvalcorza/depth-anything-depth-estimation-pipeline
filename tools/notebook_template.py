@@ -22,6 +22,20 @@ TEMPLATE = {
     "notebook_name": "depth_anything_depth_estimation_colab.ipynb",
     "profile": "E2E",
     "mode": "GUIDED",
+    "isolated_runtime": True,
+    # The fleet's uv isolated-environment mechanism (bart-mnli-zero-shot-classification-pipeline ee128d2, generator /2.1):
+    # managed CPython, a size- and SHA-256-verified uv wheel (the same wheel as this repository's workshop notebook), and a
+    # lock compiled from the pyproject pins with `uv pip compile pyproject.toml --python-version 3.12 --python-platform
+    # x86_64-manylinux_2_28 --generate-hashes --only-binary :all: -o tutorials/requirements-colab.lock.txt`, transitive
+    # versions constrained to the workshop's carried requirements.txt.
+    "managed_python": "3.12.12",
+    "uv": {
+        "version": "0.12.15",
+        "url": "https://files.pythonhosted.org/packages/1e/fd/432451d732917c49152a291de3ef171aa6b0f1a22d39780fb2c1f085ca4c/uv-0.12.15-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+        "bytes": 20081404,
+        "sha256": "aee9802f46bae436bd91751bb33ddeb379ef1596b5c19df193219d545d244b60",
+    },
+    "lock": "tutorials/requirements-colab.lock.txt",
     "run_all": (
         "Selecting **Run all** in a fresh supported runtime installs the pinned dependencies, stages and digest-verifies the "
         "pinned Depth Anything V2 Small snapshot (safetensors, 99 MB), fetches 40 digest-pinned DIODE validation views — "
@@ -119,7 +133,7 @@ TEMPLATE = {
         "emits relative inverse depth."
     ),
     "prerequisites": [
-        "- **Runtime:** a fresh supported runtime (Google Colab or Jupyter, Python 3.12). The default path runs on CPU and uses CUDA automatically when available; float32 on both. The build record measured about 0.4 s per 1024 × 768 view to predict on CPU (3.2 s for the 8-view test split) and about 0.8 s per view per training step on the last two blocks with the neck and head, so the five-epoch ladder over 24 views with six validation passes took about 150 s. The pinned `torch==2.14.0` install and the 99 MB checkpoint are the large downloads of the run, then the 312 MB of DIODE files.",
+        "- **Runtime:** a fresh supported runtime (Google Colab, Kaggle or Linux Jupyter — **Linux x86_64 only**; the notebook builds its own isolated Python 3.12.12 environment). The default path runs on CPU and uses CUDA automatically when available; float32 on both. The build record measured about 0.4 s per 1024 × 768 view to predict on CPU (3.2 s for the 8-view test split) and about 0.8 s per view per training step on the last two blocks with the neck and head, so the five-epoch ladder over 24 views with six validation passes took about 150 s. The pinned `torch==2.14.0` install and the 99 MB checkpoint are the large downloads of the run, then the 312 MB of DIODE files.",
         "- **Knowledge:** basic Python and NumPy; the difference between inverse depth (larger = nearer, arbitrary scale and shift) and metric distance; why a least-squares alignment is needed before a relative prediction can be scored against metres; what AbsRel and δ1 measure; what validation-based selection between policies means.",
         "- **Data contract:** records are `{{id, image, depth, mask}}` — a PIL image (or a path to one) with sides 14..4,096 px and aspect ratio at most 4.0, a float H × W array of metric depth in metres (or a path to a `.npy`), an optional boolean H × W validity mask (missing means `depth > 0`) covering at least 5 % of the pixels, depth at most 1,000 m, ids matching `[A-Za-z0-9_.:-]{{1,64}}` and unique; a training set needs 4..2,000 records; images are de-duplicated by decoded-pixel digest and split by `scan` / `group` so views of one scene never straddle splits. Only reference pixels inside 0.6..350 m are scored. BYOD accepts a `.zip` (or a directory) holding `records.csv` and the files, and requires a non-empty `group` on every row — the notebook's automatic split is group-disjoint only because the loader refuses ungrouped rows (`load_byod_dataset(..., require_group=False)` is the explicit opt-out, without that guarantee).",
         "- **Validation is structural, not semantic:** nothing checks that a depth map belongs to its image or that its unit is metres beyond the 1,000 m ceiling — a mis-paired or mis-scaled set is trained on without complaint.",
@@ -141,7 +155,10 @@ TEMPLATE = {
                 "Look for: 40 views, 20 scans of 2, splits 24 / 8 / 8 with 12 / 4 / 4 scans, three digests, median "
                 "depths from about a metre indoors to tens of metres outdoors, and four refusal probes — a duplicate id, "
                 "a depth map of the wrong shape, a mask with no valid pixels and a dataset too small to train on — each "
-                "rejected before `torch` does anything. About a minute on the first run for the 312 MB download."
+                "rejected before `torch` does anything. Allow about ten minutes on the first run for the 312 MB download from "
+                "the ETH archive: on a Colab T4 on 2026-10-03 the workshop notebook's prepare step, which fetches these same "
+                "120 files, took 629.8 s of an 823 s run (the whole run took 402.8 s when the files came from the former Hub "
+                "mirror)."
             ),
             "code": (
                 "import hashlib\n"
@@ -245,10 +262,13 @@ TEMPLATE = {
                 "        canvas.paste(tile, (image.width * i, 0))\n"
                 "    return canvas\n\n"
                 "try:\n"
-                "    from IPython.display import display\n"
-                "    display(preview(image, [depth]).reduce(2))\n"
-                "except ImportError:\n"
-                "    print({{'preview': 'IPython display unavailable; the preview PNG is written in Section 9'}})"
+                "    show_image = display  # provided by the isolated worker (and by IPython); IPython is not installed in the isolated environment\n"
+                "except NameError:\n"
+                "    show_image = None\n"
+                "if show_image is not None:\n"
+                "    show_image(preview(image, [depth]).reduce(2))\n"
+                "else:\n"
+                "    print({{'preview': 'display unavailable; the preview PNG is written in Section 9'}})"
             ),
         },
         {
@@ -401,11 +421,8 @@ TEMPLATE = {
                 "    sheet.paste(c, (0, y))\n"
                 "    y += c.height\n"
                 "sheet.save('outputs/{stem}_preview.png')\n"
-                "try:\n"
-                "    from IPython.display import display\n"
-                "    display(sheet.reduce(3))\n"
-                "except ImportError:\n"
-                "    pass\n\n"
+                "if show_image is not None:\n"
+                "    show_image(sheet.reduce(3))\n\n"
                 "artifact_dir = Path('outputs/{stem}_adapter')\n"
                 "shutil.rmtree(artifact_dir, ignore_errors=True)\n"
                 "pipe.save_artifact(artifact_dir, metadata={{'tutorial': '{stem}', 'data_source': data_source}})\n"
