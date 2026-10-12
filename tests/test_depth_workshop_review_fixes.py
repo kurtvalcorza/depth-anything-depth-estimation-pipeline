@@ -421,7 +421,8 @@ def test_learner_cells_run_against_the_stand_in_outputs(ws, run, monkeypatch, ca
         "SESSION_START": time.perf_counter(),
         "BOOTSTRAP_SECONDS": 1.0,
         "CARRIED_HASHES": {},
-        "run_stage": lambda *a, **k: None,
+        # run_stage returns True for a completed stage (False only for a refused input; DEP2-m2, 2026-10-12)
+        "run_stage": lambda *a, **k: True,
         "show_json": lambda rel: json.loads((run.root / rel).read_text()),
         "show_previews": lambda pattern: None,
         "show_metric_tables": lambda *a, **k: None,
