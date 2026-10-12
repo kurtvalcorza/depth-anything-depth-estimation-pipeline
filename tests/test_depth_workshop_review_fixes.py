@@ -390,7 +390,7 @@ def test_unlabelled_inference_writes_a_preview_and_checks_its_prerequisite(ws, r
     result = json.loads((run.root / "unlabelled_output.json").read_text())
     assert result["abs_rel"] is None and "preview.png" in result["outputs"]
     with Image.open(Path(result["root"]) / "preview.png") as preview:
-        assert preview.size == (1260, 350)
+        assert preview.size == (1260, 380)  # 380: metre colour bar (2026-10-12)
     with pytest.raises(RuntimeError, match="section 5"):
         ws.infer(run.base / "no_run", str(photo))
 

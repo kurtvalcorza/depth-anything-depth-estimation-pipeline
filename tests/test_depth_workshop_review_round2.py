@@ -192,7 +192,7 @@ def test_empty_paths_are_refused_without_an_error(tmp_path, capsys):
     [
         (lambda p: Image.new("RGB", (4032, 3024), "grey").save(p), ["4032x3024", "2048"]),
         (lambda p: p.write_bytes(b"not an image"), ["could not be opened as an image"]),
-        (lambda p: None, ["could not be opened as an image"]),  # missing file
+        (lambda p: None, ["file not found"]),  # missing file
     ],
 )
 def test_unlabelled_refusal_is_one_line(tmp_path, capsys, make, needles):
@@ -374,4 +374,109 @@ def test_kind_and_use_notice():
     assert "on your own Colab account" in opening and "safety-critical intended use" in opening
     revision = NB["metadata"]["dimer"]["review_revisions"][-1]
     assert revision["reviewed_commit"] == "ea2026e378c50db6b2cb6c9c864b83fd17787ae8"
-    assert revision["open_owner_decisions"] == ["DEP2-m6"]
+    assert revision["open_owner_decisions"] == ["DEP2-m6", "DEP2-CX1", "DEP2-CX2"]
+
+
+# ---- peer review of PR #14 (CX7, CX4, CX3) ----------------------------------------------------------------
+
+
+def test_unexpected_failure_inside_the_loaders_validation_raises(worker, tmp_path, monkeypatch):
+    """CX7: only a documented input rule is a refusal; a defect inside a validation call keeps its error."""
+    import zoe_reference
+
+    _make_byod(tmp_path / "byod")
+
+    def broken_digest(array):
+        raise ValueError("internal defect in a helper")
+
+    monkeypatch.setattr(worker, "array_digest", broken_digest)  # called inside validate_roles
+    with pytest.raises(ValueError, match="internal defect") as caught:
+        worker.load_byod(tmp_path / "byod")
+    assert not isinstance(caught.value, worker.InputRefused)
+    monkeypatch.undo()
+
+    def broken_validator(image):
+        return int("not a number")  # a ValueError raised by a library call, not by a rule
+
+    monkeypatch.setattr(zoe_reference, "validate_image", broken_validator)
+    with pytest.raises(ValueError, match="invalid literal") as caught:
+        worker.load_byod(tmp_path / "byod")
+    assert not isinstance(caught.value, worker.InputRefused)
+
+
+def test_unexpected_failure_inside_infer_validation_raises(worker, tmp_path, monkeypatch):
+    (tmp_path / "outputs/adapter").mkdir(parents=True)
+    (tmp_path / "outputs/adapter/manifest.json").write_text("{}")
+    photo = tmp_path / "photo.png"
+    Image.new("RGB", (64, 48), "grey").save(photo)
+
+    def broken(path):
+        return float("nan-ish")
+
+    monkeypatch.setattr(worker, "bounded_image", broken)
+    with pytest.raises(ValueError, match="could not convert") as caught:
+        worker.infer(tmp_path, str(photo))
+    assert not isinstance(caught.value, worker.InputRefused)
+
+
+def test_documented_rules_are_still_refused(worker):
+    def rule():
+        raise ValueError("a rule")
+
+    try:
+        worker.support(np.zeros((2, 2), dtype=np.float32), np.zeros((2, 2), dtype=bool))
+    except ValueError as error:
+        assert worker.input_rule_violation(error)
+    try:
+        rule()
+    except ValueError as error:
+        assert not worker.input_rule_violation(error)
+
+
+def test_unlabelled_metre_colours_are_labelled_the_right_way_round(worker, tmp_path):
+    """CX4: colour() maps low (near) to blue and high (far) to red; the caption and colour bar say so."""
+    worker_source = CARRIED["workshop.py"]
+    assert "blue = near; red = far" in worker_source and "blue = far)" not in worker_source
+    relative = np.linspace(0, 1, 48 * 64, dtype=np.float32).reshape(48, 64)
+    metric = np.linspace(1, 100, 48 * 64, dtype=np.float32).reshape(48, 64)
+    path = tmp_path / "preview.png"
+    worker.unlabelled_preview(Image.new("RGB", (64, 48), "grey"), relative, metric, path)
+    with Image.open(path) as preview:
+        assert preview.size == (1260, 380)
+        near, far = preview.getpixel((890 + 1, 355)), preview.getpixel((890 + 298, 355))
+    assert near[2] > 200 and near[0] < 50  # blue at 0.6 m
+    assert far[0] > 200 and far[2] < 50  # red at 350 m
+
+
+def test_fit_diagnostics_are_shown_beside_the_metric_tables(monkeypatch, capsys, tmp_path):
+    """CX3: negative-scale, degenerate and far-cap fits and the fewest scored pixels are shown and flagged."""
+    shown: list[str] = []
+    display = types.ModuleType("IPython.display")
+    display.display = lambda obj: shown.append(obj.text)
+    display.Markdown = lambda text: types.SimpleNamespace(text=text)
+    monkeypatch.setitem(sys.modules, "IPython", types.ModuleType("IPython"))
+    monkeypatch.setitem(sys.modules, "IPython.display", display)
+    tree = ast.parse(SOURCE["code-04"])
+    functions = [n for n in tree.body if isinstance(n, ast.FunctionDef)
+                 and n.name in ("show_fit_diagnostics", "show_metric_tables")]
+    namespace = {"ROOT": tmp_path, "json": json}
+    exec(compile(ast.Module(body=functions, type_ignores=[]), "code-04", "exec"), namespace)
+    fit = {"rank": 2, "degenerate": False, "negative_scale": False, "far_cap_fraction": 0.0}
+    aligned_protocol = {"role": "test", "protocol": "reference-assisted affine alignment"}
+    rows = [
+        {"id": "a", "model": "m", "abs_rel": 0.1, "delta1": 0.9, "n_valid": 500, **aligned_protocol, **fit},
+        {"id": "b", "model": "m", "abs_rel": 0.0, "delta1": 1.0, "n_valid": 2, **aligned_protocol, **fit,
+         "negative_scale": True, "far_cap_fraction": 0.25},
+        {"id": "c", "role": "test", "model": "z", "protocol": "unaligned metric metres", "abs_rel": 0.4,
+         "delta1": 0.4, "n_valid": 70},
+    ]
+    (tmp_path / "outputs").mkdir()
+    (tmp_path / "outputs/rows.json").write_text(json.dumps({"rows": rows}))
+    namespace["show_metric_tables"](["rows.json"])
+    printed = capsys.readouterr().out
+    diagnostics = [text for text in shown if text.startswith("*Scoring support and fit diagnostics")]
+    assert len(diagnostics) == 2
+    aligned = next(text for text in diagnostics if "affine" in text)
+    assert "| m | 2 | 2 (b) | 1 | 0 | 0.1250 / 0.2500 |" in aligned
+    assert "| z | 1 | 70 (c) | no fit | no fit | no fit |" in next(t for t in diagnostics if "unaligned" in t)
+    assert printed.count("Flagged images") == 1 and "m: b [NC]" in printed
