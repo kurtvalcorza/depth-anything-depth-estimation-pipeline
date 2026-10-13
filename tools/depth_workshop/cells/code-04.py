@@ -121,6 +121,8 @@ def show_metric_tables(filenames, role='test', breakdown=False):
         for grouping in (['all', 'domain', 'scene'] if breakdown else ['all']):
             groups = {}
             for row in selected:
+                if not row.get('informative', True):
+                    continue  # uninformative: listed below, excluded from the means
                 key = (row['model'], row.get(grouping, 'all') if grouping != 'all' else 'all')
                 groups.setdefault(key, []).append(row)
             table = [f'**{protocol} — {role}; equal-image means ({grouping})**', '',
@@ -130,6 +132,11 @@ def show_metric_tables(filenames, role='test', breakdown=False):
                 d = sum(r['delta1'] for r in records) / len(records)
                 table.append(f'| {model} | {group} | {len(records)} | {a:.5f} | {d:.5f} |')
             display(Markdown('\n'.join(table)))
+        uninformative = [r for r in selected if not r.get('informative', True)]
+        print('Uninformative images (fewer than 1,000 scored pixels or under 1% of the image scored;'
+              ' scored and kept, excluded from the means above):',
+              ', '.join(f"{r['model']} {r['id']} ({r['n_valid']} pixels, AbsRel {r['abs_rel']:.5f})"
+                        for r in uninformative) or 'none')
         show_fit_diagnostics(protocol, role, selected)
 
 def show_activity():
@@ -138,7 +145,8 @@ def show_activity():
     table = ['| Brightness factor | Improved AbsRel | Unchanged | Worsened | Mean paired AbsRel delta |',
              '|---|---:|---:|---:|---:|']
     for factor, comparison in sorted(activity['comparisons'].items()):
-        delta = sum(r['abs_rel_delta'] for r in comparison['rows']) / len(comparison['rows'])
+        kept = [r for r in comparison['rows'] if r.get('informative', True)]
+        delta = sum(r['abs_rel_delta'] for r in kept) / len(kept)
         table.append(f"| {factor} | {comparison['improved']} | {comparison['unchanged']} | {comparison['worsened']} | {delta:+.5f} |")
     display(Markdown('\n'.join(table)))
     scene_table = ['| Factor | Scene | Images | Mean paired AbsRel delta |', '|---|---|---:|---:|']

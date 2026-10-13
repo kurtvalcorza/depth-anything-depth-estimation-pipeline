@@ -119,6 +119,21 @@ def read_json(path: Path) -> Any:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+# DEP2-CX2 (owner decision B, 2026-10-13): an image is an informative evaluation only with at least
+# INFORMATIVE_MIN_PIXELS scored pixels AND at least INFORMATIVE_MIN_FRACTION of its pixels scored. The
+# reference-assisted alignment fits two parameters per image, so a handful of scored pixels can be matched almost
+# exactly without showing any structure; 1,000 pixels keeps every fit heavily overdetermined (500 observations per
+# parameter), and 1% keeps a small patch from standing in for a whole view. Both were fixed before the default
+# sample's counts were inspected. Uninformative images are scored, kept and listed, but excluded from every mean,
+# count and selection score.
+INFORMATIVE_MIN_PIXELS = 1000
+INFORMATIVE_MIN_FRACTION = 0.01
+
+
+def informative(n_valid: int, valid_fraction: float) -> bool:
+    return n_valid >= INFORMATIVE_MIN_PIXELS and valid_fraction >= INFORMATIVE_MIN_FRACTION
+
+
 def support(depth: np.ndarray, mask: np.ndarray) -> np.ndarray:
     depth, mask = np.asarray(depth), np.asarray(mask)
     if depth.ndim != 2 or mask.shape != depth.shape or mask.dtype != np.bool_:
@@ -169,6 +184,7 @@ def score(pred: np.ndarray, depth: np.ndarray, mask: np.ndarray, aligned: bool =
         "delta1": float(np.mean(np.maximum(estimate / ref, ref / estimate) < 1.25)),
         "n_valid": int(valid.sum()),
         "valid_fraction": float(valid.mean()),
+        "informative": informative(int(valid.sum()), float(valid.mean())),
         "excluded_predictions": 0,
         "protocol": "reference-assisted affine alignment" if aligned else "unaligned metric metres",
         **fit,
@@ -178,8 +194,21 @@ def score(pred: np.ndarray, depth: np.ndarray, mask: np.ndarray, aligned: bool =
 def aggregate(rows: list[dict]) -> dict:
     if not rows:
         return {"n": 0, "abs_rel": None, "delta1": None, "reason": "no records"}
+    # DEP2-CX2: uninformative images are listed, not averaged (rows from before this rule count as informative).
+    excluded = [
+        {key: r.get(key) for key in ("id", "model", "n_valid", "valid_fraction")}
+        for r in rows
+        if not r.get("informative", True)
+    ]
+    rows = [r for r in rows if r.get("informative", True)]
+    if not rows:
+        raise RuntimeError(
+            f"every image in this group is uninformative (fewer than {INFORMATIVE_MIN_PIXELS} scored pixels or under "
+            f"{INFORMATIVE_MIN_FRACTION:.0%} of the image scored), so no mean can be computed: {excluded}"
+        )
     result = {
         "n": len(rows),
+        "uninformative_excluded": excluded,
         "abs_rel": float(np.mean([r["abs_rel"] for r in rows])),
         "delta1": float(np.mean([r["delta1"] for r in rows])),
         "aggregation": "equal-image mean",
@@ -844,11 +873,16 @@ def paired(before: list[dict], after: list[dict]) -> dict:
             "domain": r.get("domain", "unspecified"),
             "abs_rel_delta": r["abs_rel"] - old[r["id"]]["abs_rel"],
             "delta1_delta": r["delta1"] - old[r["id"]]["delta1"],
+            "informative": bool(r.get("informative", True) and old[r["id"]].get("informative", True)),
         }
         for r in after
     ]
+    # DEP2-CX2: counts and means use informative pairs only; the uninformative ones are listed.
+    excluded = [r["id"] for r in rows if not r["informative"]]
+    every_row, rows = rows, [r for r in rows if r["informative"]]
     return {
-        "rows": rows,
+        "rows": every_row,
+        "uninformative_excluded": excluded,
         "improved": sum(r["abs_rel_delta"] < -1e-12 for r in rows),
         "unchanged": sum(abs(r["abs_rel_delta"]) <= 1e-12 for r in rows),
         "worsened": sum(r["abs_rel_delta"] > 1e-12 for r in rows),
@@ -945,6 +979,7 @@ def report(root: Path) -> None:
         "delta1",
         "n_valid",
         "valid_fraction",
+        "informative",
     ]
     with (outputs / "metrics.csv").open("w", newline="", encoding="utf-8") as handle:
         writer = csv.DictWriter(handle, fieldnames=fields, extrasaction="ignore")
@@ -995,6 +1030,14 @@ def report(root: Path) -> None:
             row = summaries[label]
             lines.append(f"| {label} | {row['n']} | {row['abs_rel']:.6f} | {row['delta1']:.6f} |")
         lines.append("")
+    excluded = sorted({(e["id"], e["n_valid"]) for s in summaries.values() for e in s.get("uninformative_excluded", [])})
+    lines.append(
+        f"Uninformative test images (fewer than {INFORMATIVE_MIN_PIXELS} scored pixels or under "
+        f"{INFORMATIVE_MIN_FRACTION:.0%} of the image scored; scored and kept, excluded from these means): "
+        + (", ".join(f"{i} ({n} pixels)" for i, n in excluded) or "none")
+        + "."
+    )
+    lines.append("")
     lines += [
         "Equal-image means; see metrics.json for scene/domain means. No cross-protocol ranking.",
         "Reference alignment uses test references and is not a deployable metre calibration.",

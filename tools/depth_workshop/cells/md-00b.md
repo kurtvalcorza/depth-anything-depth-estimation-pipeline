@@ -7,6 +7,7 @@
 | **Reference depth / sensor mask** | The measured depth from the dataset's scanner, and a true/false map of the pixels where the scanner returned a usable value. |
 | **AbsRel** | Mean of `abs(predicted − reference) / reference` over the scored pixels; lower is better. |
 | **Delta-1** | Fraction of scored pixels whose prediction is within a factor of 1.25 of the reference; higher is better. |
+| **Informative image** | An image with at least 1,000 scored pixels covering at least 1% of the image. Other images are still scored and listed, but left out of every mean and count. |
 | **Affine alignment** | Fitting a scale and an offset per image so a relative prediction best matches that image's reference. It uses the answer, so it is an evaluation device, not a calibration. |
 | **Backbone** | The large first part of the network that turns pixels into general visual features. It stays frozen (unchanged) here. |
 | **Neck and head** | The smaller later layers that combine those features and produce the depth map (the DPT neck and head in Depth Anything). Only these are trained here. |

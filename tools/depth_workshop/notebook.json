@@ -28,8 +28,8 @@
    "generated_from": {
     "repository": "kurtvalcorza/depth-anything-depth-estimation-pipeline",
     "base_revision": "07c4a9858d3d12f2f1924ffb8a23bad10cd992fb",
-    "generator": "build_depth_workshop.py/1",
-    "generator_sha256": "242ed84cd3ff6247417ad305604ca395ee3dfbf3105b2b6f8850d478f8f46174",
+    "generator": "build_depth_workshop.py/2",
+    "generator_sha256": "computed",
     "carried": [
      [
       "depth_reference/__init__.py",
@@ -166,11 +166,7 @@
       "DEP2-m5",
       "DEP2-m7"
      ],
-     "open_owner_decisions": [
-      "DEP2-m6",
-      "DEP2-CX1",
-      "DEP2-CX2"
-     ],
+     "open_owner_decisions": [],
      "cells": [
       "code-03",
       "code-04",
@@ -202,7 +198,13 @@
      },
      "edit_method": "anchor-asserting edits on blob 66021da652f7 (no in-repo generator for this notebook; each anchor matched exactly once); cell ids and order unchanged; CARRIED_FILES re-serialised with tools/split_workshop_carrier.py carried_literal; CARRIED_HASHES, the carried source.json and generated_from.files record the new workshop.py digest; in workshop.py only the BYOD/unlabelled functions load_byod, infer, main, bounded_image, bounded_array and unlabelled_preview changed (plus REFUSED_EXIT, InputRefused, refuse, INPUT_RULES, input_rule_violation); every other top-level statement is AST-identical, so default numerical stage code and settings are unchanged; numerical results for this revision remain unverified pending its hosted run",
      "clean_runtime_evidence": "pending; the 2026-10-03 Colab CLI run covers the previous blob 66021da652f7 only",
-     "peer_review": "Codex peer review of the PR #14 changes (CX4, CX7, CX3, CX1/CX2 wording, CX8), applied by fix_cx.py on blob f14e10d2; same anchor-asserting method; open owner decisions DEP2-CX1 and DEP2-CX2"
+     "peer_review": "Codex peer review of the PR #14 changes (CX4, CX7, CX3, CX1/CX2 wording, CX8), applied by fix_cx.py on blob f14e10d2; same anchor-asserting method; open owner decisions DEP2-CX1 and DEP2-CX2",
+     "owner_decisions": {
+      "DEP2-m6": "A: tools/build_depth_workshop.py rebuilds the notebook byte for byte from tracked sources (parity proven on blob fa9244d9 before any further edit); CI runs --check",
+      "DEP2-CX2": "B: informative image = at least 1000 scored pixels and at least 1% of the image scored; uninformative images kept, listed and excluded from aggregates, paired counts and validation selection; no default image is excluded",
+      "DEP2-CX1": "A decided, not implemented: the DIODE depth convention (ray distance or z-depth) is not stated by the DIODE paper, devkit or homepage; returned to the owner"
+     },
+     "edit_method_after_2026_10_13": "from blob fa9244d9 on, edits are made to the tracked sources under tools/depth_workshop/ and the notebook is rebuilt with tools/build_depth_workshop.py; the CX2 aggregation rule changes aggregate(), paired(), score() (adds the 'informative' flag) and report(); other default-path stage code is unchanged"
     }
    ]
   }

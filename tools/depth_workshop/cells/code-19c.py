@@ -6,7 +6,8 @@ if RUN_OWN_FACTOR:
     run_stage('own_activity', '--factor', str(float(OWN_BRIGHTNESS_FACTOR)))
     own = json.loads((ROOT / 'own_activity_output.json').read_text())
     comparison = own['comparison']
-    mean_delta = sum(r['abs_rel_delta'] for r in comparison['rows']) / len(comparison['rows'])
+    kept = [r for r in comparison['rows'] if r.get('informative', True)]
+    mean_delta = sum(r['abs_rel_delta'] for r in kept) / len(kept)
     print({'factor': own['factor'], 'improved': comparison['improved'],
            'unchanged': comparison['unchanged'], 'worsened': comparison['worsened'],
            'mean_paired_abs_rel_delta': round(mean_delta, 5)})

@@ -374,7 +374,9 @@ def test_kind_and_use_notice():
     assert "on your own Colab account" in opening and "safety-critical intended use" in opening
     revision = NB["metadata"]["dimer"]["review_revisions"][-1]
     assert revision["reviewed_commit"] == "ea2026e378c50db6b2cb6c9c864b83fd17787ae8"
-    assert revision["open_owner_decisions"] == ["DEP2-m6", "DEP2-CX1", "DEP2-CX2"]
+    assert revision["open_owner_decisions"] == []
+    assert set(revision["owner_decisions"]) == {"DEP2-m6", "DEP2-CX1", "DEP2-CX2"}
+    assert NB["metadata"]["dimer"]["generated_from"]["generator"] == "build_depth_workshop.py/2"
 
 
 # ---- peer review of PR #14 (CX7, CX4, CX3) ----------------------------------------------------------------
@@ -480,3 +482,61 @@ def test_fit_diagnostics_are_shown_beside_the_metric_tables(monkeypatch, capsys,
     assert "| m | 2 | 2 (b) | 1 | 0 | 0.1250 / 0.2500 |" in aligned
     assert "| z | 1 | 70 (c) | no fit | no fit | no fit |" in next(t for t in diagnostics if "unaligned" in t)
     assert printed.count("Flagged images") == 1 and "m: b [NC]" in printed
+
+
+# ---- DEP2-CX2 (owner decision B): uninformative images are kept, listed and excluded from aggregates ------
+
+
+def _row(rid, abs_rel, n_valid, fraction, **extra):
+    return {"id": rid, "abs_rel": abs_rel, "delta1": 1 - abs_rel, "n_valid": n_valid,
+            "valid_fraction": fraction, "informative": n_valid >= 1000 and fraction >= 0.01,
+            "scene": "s", "domain": "d", **extra}
+
+
+def test_score_flags_images_with_too_few_scored_pixels(worker):
+    depth = np.full((48, 64), 5.0, dtype=np.float32)
+    mask = np.zeros((48, 64), dtype=bool)
+    mask[:2, :] = True  # 128 scored pixels: below 1,000
+    prediction = np.full((48, 64), 4.0, dtype=np.float32)
+    assert worker.score(prediction, depth, mask)["informative"] is False
+    assert worker.score(prediction, depth, np.ones((48, 64), dtype=bool))["informative"] is True
+    assert worker.INFORMATIVE_MIN_PIXELS == 1000 and worker.INFORMATIVE_MIN_FRACTION == 0.01
+
+
+def test_aggregate_and_paired_exclude_uninformative_images(worker):
+    rows = [_row("a", 0.1, 5000, 0.5), _row("b", 0.3, 5000, 0.5), _row("c", 0.0, 2, 0.0001)]
+    result = worker.aggregate(rows)
+    assert result["n"] == 2 and result["abs_rel"] == pytest.approx(0.2)
+    assert [e["id"] for e in result["uninformative_excluded"]] == ["c"]
+    legacy = [{k: v for k, v in r.items() if k != "informative"} for r in rows]
+    assert worker.aggregate(legacy)["n"] == 3  # rows written before the rule count as informative
+    with pytest.raises(RuntimeError, match="every image in this group is uninformative"):
+        worker.aggregate([rows[2]])
+    after = [_row("a", 0.05, 5000, 0.5), _row("b", 0.4, 5000, 0.5), _row("c", 0.5, 2, 0.0001)]
+    change = worker.paired(rows, after)
+    assert (change["improved"], change["unchanged"], change["worsened"]) == (1, 0, 1)
+    assert change["uninformative_excluded"] == ["c"] and len(change["rows"]) == 3
+    assert change["per_scene"]["s"]["n"] == 2
+
+
+def test_metric_tables_list_uninformative_images_separately(monkeypatch, capsys, tmp_path):
+    shown: list[str] = []
+    display = types.ModuleType("IPython.display")
+    display.display = lambda obj: shown.append(obj.text)
+    display.Markdown = lambda text: types.SimpleNamespace(text=text)
+    monkeypatch.setitem(sys.modules, "IPython", types.ModuleType("IPython"))
+    monkeypatch.setitem(sys.modules, "IPython.display", display)
+    tree = ast.parse(SOURCE["code-04"])
+    functions = [n for n in tree.body if isinstance(n, ast.FunctionDef)
+                 and n.name in ("show_fit_diagnostics", "show_metric_tables")]
+    namespace = {"ROOT": tmp_path, "json": json}
+    exec(compile(ast.Module(body=functions, type_ignores=[]), "code-04", "exec"), namespace)
+    protocol = {"role": "test", "model": "m", "protocol": "unaligned metric metres"}
+    rows = [_row("a", 0.1, 5000, 0.5, **protocol), _row("b", 0.3, 5000, 0.5, **protocol),
+            _row("c", 0.0, 2, 0.0001, **protocol)]
+    (tmp_path / "outputs").mkdir()
+    (tmp_path / "outputs/rows.json").write_text(json.dumps({"rows": rows}))
+    namespace["show_metric_tables"](["rows.json"])
+    table = next(text for text in shown if "equal-image means" in text)
+    assert "| m | all | 2 | 0.20000 | 0.80000 |" in table
+    assert "m c (2 pixels" in capsys.readouterr().out
