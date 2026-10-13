@@ -1,0 +1,440 @@
+{
+ "nbformat": 4,
+ "nbformat_minor": 5,
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "name": "python",
+   "version": "3.12"
+  },
+  "accelerator": "GPU",
+  "colab": {
+   "name": "DIMER_MultiModel_Depth_Estimation_Workshop.ipynb",
+   "gpuType": "T4",
+   "provenance": []
+  },
+  "dimer": {
+   "notebook_spec": "2.2",
+   "notebook_profile": "E2E",
+   "notebook_mode": "WORKSHOP",
+   "notebook_kind": "WORKSHOP",
+   "standalone": true,
+   "requires_dimer_worker": false,
+   "release_status": "Candidate",
+   "generated_from": {
+    "repository": "kurtvalcorza/depth-anything-depth-estimation-pipeline",
+    "base_revision": "07c4a9858d3d12f2f1924ffb8a23bad10cd992fb",
+    "generator": "build_depth_workshop.py/1",
+    "generator_sha256": "242ed84cd3ff6247417ad305604ca395ee3dfbf3105b2b6f8850d478f8f46174",
+    "carried": [
+     [
+      "depth_reference/__init__.py",
+      "src/depth_anything_depth_estimation_pipeline/__init__.py"
+     ],
+     [
+      "depth_reference/metrics.py",
+      "src/depth_anything_depth_estimation_pipeline/metrics.py"
+     ],
+     [
+      "depth_reference/pipeline.py",
+      "src/depth_anything_depth_estimation_pipeline/pipeline.py"
+     ],
+     [
+      "depth_reference/samples.py",
+      "src/depth_anything_depth_estimation_pipeline/samples.py"
+     ],
+     [
+      "zoe_reference.py",
+      "tools/depth_workshop/carried/zoe_reference.py"
+     ],
+     [
+      "weights/zoe/dimer-base-manifest.json",
+      "tools/depth_workshop/carried/weights/zoe/dimer-base-manifest.json"
+     ],
+     [
+      "licenses/zoe.txt",
+      "tools/depth_workshop/carried/licenses/zoe.txt"
+     ],
+     [
+      "licenses/depth-code.txt",
+      "LICENSE"
+     ],
+     [
+      "licenses/weight-data-provenance.md",
+      "docs/WEIGHTS.md"
+     ],
+     [
+      "vendor_provenance.json",
+      "tools/depth_workshop/carried/vendor_provenance.json"
+     ],
+     [
+      "weights/depth/dimer-base-manifest.json",
+      "weights/depth-anything-v2-small/dimer-base-manifest.json"
+     ],
+     [
+      "workshop.py",
+      "tools/depth_workshop/carried/workshop.py"
+     ],
+     [
+      "requirements.txt",
+      "tools/depth_workshop/carried/requirements.txt"
+     ]
+    ]
+   },
+   "review_revisions": [
+    {
+     "date": "2026-10-02",
+     "review": "docs/reviews/2026-10-02-notebook-review/DIMER_MultiModel_Depth_Estimation_Workshop_Review.md",
+     "reviewed_commit": "5f6b516c0ca532a6fefa379a280e9e127cec5d37",
+     "findings_fixed": [
+      "DEP-M1",
+      "DEP-m1",
+      "DEP-m2",
+      "DEP-m3",
+      "DEP-m4",
+      "DEP-m5",
+      "DEP-m6",
+      "DEP-m7"
+     ],
+     "workshop_revision": "0.2.0-candidate",
+     "edit_method": "anchor-asserting edits (no in-repo generator for this notebook); carried workshop.py replaced and its digest updated in CARRIED_HASHES, source.json and generated_from.files",
+     "workshop_py_sha256": {
+      "before": "f1e546db5ac6c477ff8fc59c1b6de97e25f0962b4b0e6ce4fdd6fb632b76e7b8",
+      "after": "fbfb4d51b736ec88e3f28f6f394ebcfc6408260d53ac76ca70c5fbce789290a8"
+     }
+    },
+    {
+     "date": "2026-10-03",
+     "reason": "Source layout: no cell line over 2000 characters (the CARRIED_FILES line was 297,227 characters)",
+     "cells": [
+      "code-03"
+     ],
+     "carried_files_changed": [],
+     "edit_method": "tools/split_workshop_carrier.py: CARRIED_FILES re-serialised as parenthesised runs of string pieces (at most 1000 characters each); ast.literal_eval of the new literal equals the old one, so the carried text, CARRIED_HASHES, source.json and generated_from.files are unchanged; no in-repo generator for this notebook"
+    },
+    {
+     "date": "2026-10-03",
+     "reason": "Corpus source change: the Hugging Face Hub mirror of the pinned DIODE files was withdrawn (HTTP 401 / not found); the same 120 files, with identical SHA-256 digests, are read by HTTP Range requests at pinned byte offsets from the Marigold evaluation dataset archive's diode_val.tar (ETH Zürich PRS)",
+     "cells": [
+      "code-03",
+      "md-25"
+     ],
+     "carried_files_changed": [
+      "depth_reference/__init__.py",
+      "depth_reference/samples.py",
+      "licenses/weight-data-provenance.md",
+      "workshop.py",
+      "source.json"
+     ],
+     "carried_sha256": {
+      "depth_reference/__init__.py": {
+       "before": "a08fb132505bbc5e5221a766e841407be5f1036b1b4529706ac63b21028e9306",
+       "after": "9ed36a1b04ee11e2c2bf0e83a315d695fe86634014bc4f2c1211f9f37b785c27"
+      },
+      "depth_reference/samples.py": {
+       "before": "ee1bc73a87a3c9a0773a3904aef0b176669e985fa17a9b007ad1b6b21a9af214",
+       "after": "4f4d8cd008ac5c809f545d88875c5802a5b88e9135ab81fbcd3a3127f313aabd"
+      },
+      "licenses/weight-data-provenance.md": {
+       "before": "fbcaa05cb3067b13ec16db19146e5ce5aa4322c5dfedbcdbc5c7dec925c2c15d",
+       "after": "8b61616ede4d586a3d8663141b65466cc8f0f4c0d4867423496e03f2d7351fe2"
+      },
+      "workshop.py": {
+       "before": "fbfb4d51b736ec88e3f28f6f394ebcfc6408260d53ac76ca70c5fbce789290a8",
+       "after": "078f3e68e16f493547fdf0e27eae98920a28d5dffe477e344001fe9e1dfabd8a"
+      },
+      "source.json": {
+       "before": "a397a869f564a3e1ec0ee19ac6c811b7e8a429581de4314c1964e440b8104cdc",
+       "after": "38c2deb27de16b922b6635ed96dd2219a2c569b7c7c7c46d02f8b20a1c8c6b2e"
+      }
+     },
+     "edit_method": "anchor-asserting in-place edit (no in-repo generator for this notebook): depth_reference/samples.py and __init__.py copied from src/, licenses/weight-data-provenance.md from docs/WEIGHTS.md, one provenance line of workshop.py changed (CORPUS_COMMIT -> CORPUS_URL + CORPUS_ARCHIVE_BYTES); CARRIED_HASHES, source.json and generated_from.files updated; CARRIED_FILES kept in the split_workshop_carrier.py layout"
+    },
+    {
+     "date": "2026-10-13",
+     "review": "Notebook Review Framework v1, round 2026-10-12 (review of ea2026e, notebook blob 66021da652f7; findings DEP2-*); the review report is not committed to this repository",
+     "reviewed_commit": "ea2026e378c50db6b2cb6c9c864b83fd17787ae8",
+     "findings_fixed": [
+      "DEP2-m1",
+      "DEP2-m2",
+      "DEP2-m3",
+      "DEP2-m4",
+      "DEP2-m5",
+      "DEP2-m7"
+     ],
+     "open_owner_decisions": [
+      "DEP2-m6",
+      "DEP2-CX1",
+      "DEP2-CX2"
+     ],
+     "cells": [
+      "code-03",
+      "code-04",
+      "code-06",
+      "code-20",
+      "code-22",
+      "code-24",
+      "md-00",
+      "md-00b",
+      "md-05",
+      "md-09",
+      "md-13",
+      "md-21",
+      "md-25"
+     ],
+     "carried_files_changed": [
+      "workshop.py",
+      "source.json"
+     ],
+     "carried_sha256": {
+      "workshop.py": {
+       "before": "078f3e68e16f493547fdf0e27eae98920a28d5dffe477e344001fe9e1dfabd8a",
+       "after": "3c0dbd6086ee93a62ca7f18aba9574caa2f4f32d9de7ddf04b02bf2b506dae8c"
+      },
+      "source.json": {
+       "before": "38c2deb27de16b922b6635ed96dd2219a2c569b7c7c7c46d02f8b20a1c8c6b2e",
+       "after": "68d845d7df23ad9bfd4ee69d7cd885863735a198a135b4c16c8f556871a2eb97"
+      }
+     },
+     "edit_method": "anchor-asserting edits on blob 66021da652f7 (no in-repo generator for this notebook; each anchor matched exactly once); cell ids and order unchanged; CARRIED_FILES re-serialised with tools/split_workshop_carrier.py carried_literal; CARRIED_HASHES, the carried source.json and generated_from.files record the new workshop.py digest; in workshop.py only the BYOD/unlabelled functions load_byod, infer, main, bounded_image, bounded_array and unlabelled_preview changed (plus REFUSED_EXIT, InputRefused, refuse, INPUT_RULES, input_rule_violation); every other top-level statement is AST-identical, so default numerical stage code and settings are unchanged; numerical results for this revision remain unverified pending its hosted run",
+     "clean_runtime_evidence": "pending; the 2026-10-03 Colab CLI run covers the previous blob 66021da652f7 only",
+     "peer_review": "Codex peer review of the PR #14 changes (CX4, CX7, CX3, CX1/CX2 wording, CX8), applied by fix_cx.py on blob f14e10d2; same anchor-asserting method; open owner decisions DEP2-CX1 and DEP2-CX2"
+    }
+   ]
+  }
+ },
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "id": "md-00",
+   "metadata": {},
+   "source": "cells/md-00.md"
+  },
+  {
+   "cell_type": "markdown",
+   "id": "md-00b",
+   "metadata": {},
+   "source": "cells/md-00b.md"
+  },
+  {
+   "cell_type": "markdown",
+   "id": "md-01",
+   "metadata": {},
+   "source": "cells/md-01.md"
+  },
+  {
+   "cell_type": "code",
+   "id": "code-02",
+   "metadata": {
+    "cellView": "form"
+   },
+   "execution_count": null,
+   "outputs": [],
+   "source": "cells/code-02.py"
+  },
+  {
+   "cell_type": "code",
+   "id": "code-03",
+   "metadata": {
+    "cellView": "form"
+   },
+   "execution_count": null,
+   "outputs": [],
+   "source": "cells/code-03.py"
+  },
+  {
+   "cell_type": "code",
+   "id": "code-04",
+   "metadata": {
+    "cellView": "form"
+   },
+   "execution_count": null,
+   "outputs": [],
+   "source": "cells/code-04.py"
+  },
+  {
+   "cell_type": "markdown",
+   "id": "md-05",
+   "metadata": {},
+   "source": "cells/md-05.md"
+  },
+  {
+   "cell_type": "code",
+   "id": "code-06",
+   "metadata": {},
+   "execution_count": null,
+   "outputs": [],
+   "source": "cells/code-06.py"
+  },
+  {
+   "cell_type": "markdown",
+   "id": "md-07",
+   "metadata": {},
+   "source": "cells/md-07.md"
+  },
+  {
+   "cell_type": "code",
+   "id": "code-08",
+   "metadata": {},
+   "execution_count": null,
+   "outputs": [],
+   "source": "cells/code-08.py"
+  },
+  {
+   "cell_type": "markdown",
+   "id": "md-09",
+   "metadata": {},
+   "source": "cells/md-09.md"
+  },
+  {
+   "cell_type": "code",
+   "id": "code-10",
+   "metadata": {},
+   "execution_count": null,
+   "outputs": [],
+   "source": "cells/code-10.py"
+  },
+  {
+   "cell_type": "markdown",
+   "id": "md-10b",
+   "metadata": {},
+   "source": "cells/md-10b.md"
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "code-10c",
+   "metadata": {},
+   "outputs": [],
+   "source": "cells/code-10c.py"
+  },
+  {
+   "cell_type": "markdown",
+   "id": "md-11",
+   "metadata": {},
+   "source": "cells/md-11.md"
+  },
+  {
+   "cell_type": "code",
+   "id": "code-12",
+   "metadata": {},
+   "execution_count": null,
+   "outputs": [],
+   "source": "cells/code-12.py"
+  },
+  {
+   "cell_type": "markdown",
+   "id": "md-13",
+   "metadata": {},
+   "source": "cells/md-13.md"
+  },
+  {
+   "cell_type": "code",
+   "id": "code-14",
+   "metadata": {},
+   "execution_count": null,
+   "outputs": [],
+   "source": "cells/code-14.py"
+  },
+  {
+   "cell_type": "markdown",
+   "id": "md-15",
+   "metadata": {},
+   "source": "cells/md-15.md"
+  },
+  {
+   "cell_type": "code",
+   "id": "code-16",
+   "metadata": {},
+   "execution_count": null,
+   "outputs": [],
+   "source": "cells/code-16.py"
+  },
+  {
+   "cell_type": "markdown",
+   "id": "md-17",
+   "metadata": {},
+   "source": "cells/md-17.md"
+  },
+  {
+   "cell_type": "code",
+   "id": "code-18",
+   "metadata": {},
+   "execution_count": null,
+   "outputs": [],
+   "source": "cells/code-18.py"
+  },
+  {
+   "cell_type": "markdown",
+   "id": "md-19",
+   "metadata": {},
+   "source": "cells/md-19.md"
+  },
+  {
+   "cell_type": "markdown",
+   "id": "md-19b",
+   "metadata": {},
+   "source": "cells/md-19b.md"
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "code-19c",
+   "metadata": {},
+   "outputs": [],
+   "source": "cells/code-19c.py"
+  },
+  {
+   "cell_type": "markdown",
+   "id": "md-19d",
+   "metadata": {},
+   "source": "cells/md-19d.md"
+  },
+  {
+   "cell_type": "code",
+   "id": "code-20",
+   "metadata": {},
+   "execution_count": null,
+   "outputs": [],
+   "source": "cells/code-20.py"
+  },
+  {
+   "cell_type": "markdown",
+   "id": "md-21",
+   "metadata": {},
+   "source": "cells/md-21.md"
+  },
+  {
+   "cell_type": "code",
+   "id": "code-22",
+   "metadata": {},
+   "execution_count": null,
+   "outputs": [],
+   "source": "cells/code-22.py"
+  },
+  {
+   "cell_type": "markdown",
+   "id": "md-23",
+   "metadata": {},
+   "source": "cells/md-23.md"
+  },
+  {
+   "cell_type": "code",
+   "id": "code-24",
+   "metadata": {},
+   "execution_count": null,
+   "outputs": [],
+   "source": "cells/code-24.py"
+  },
+  {
+   "cell_type": "markdown",
+   "id": "md-25",
+   "metadata": {},
+   "source": "cells/md-25.md"
+  }
+ ]
+}

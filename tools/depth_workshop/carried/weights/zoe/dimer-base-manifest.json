@@ -1,0 +1,30 @@
+{
+  "format": "dimer_hf_snapshot",
+  "formatVersion": 1,
+  "modelKey": "zoedepth-nyu-kitti",
+  "modelId": "Intel/zoedepth-nyu-kitti",
+  "revision": "f364d4c7936e91f465abba182208dd68142bf0ca",
+  "files": [
+    {
+      "path": "README.md",
+      "bytes": 2508,
+      "sha256": "3a24f725d6ba1ae7144a50b08eca542965bd99d4c003d2898e77db56cdb6ca9a"
+    },
+    {
+      "path": "config.json",
+      "bytes": 2225,
+      "sha256": "58494c160c520023c4d5bdeebb3b2d035e37e48cc81225580f49fcb06e175913"
+    },
+    {
+      "path": "model.safetensors",
+      "bytes": 1380374404,
+      "sha256": "c5494fa0938f18d71e215e245472470c3aefebd7b434abd89750e5ae4008e2dc"
+    },
+    {
+      "path": "preprocessor_config.json",
+      "bytes": 723,
+      "sha256": "0b64d8edc980d7b7abb819085650c43da8b8183acbd4336ab5a9e0e9caf4648e"
+    }
+  ],
+  "totalBytes": 1380379860
+}

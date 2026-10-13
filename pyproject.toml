@@ -31,6 +31,8 @@ addopts = "-q"
 line-length = 110
 target-version = "py312"
 src = ["src", "tests"]
+# Notebook cell sources and carried files of the depth workshop are data for tools/build_depth_workshop.py.
+extend-exclude = ["tools/depth_workshop"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]

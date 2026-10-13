@@ -3,3 +3,6 @@ weights/** -text
 
 # Executed notebooks are archived byte-for-byte as execution evidence; never convert their line endings.
 docs/execution-evidence/** -text
+
+# The depth workshop generator rebuilds the notebook byte for byte from these sources; keep them LF.
+tools/depth_workshop/** text eol=lf
