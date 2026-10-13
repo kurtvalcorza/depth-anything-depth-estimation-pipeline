@@ -23,6 +23,7 @@ import pytest
 from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[1]
+MANIFEST_HEAD = {"units": "metres", "depth_convention": "z_depth"}  # DEP2-CX1
 NOTEBOOK = ROOT / "tutorials" / "DIMER_MultiModel_Depth_Estimation_Workshop.ipynb"
 NB = json.loads(NOTEBOOK.read_text(encoding="utf-8"))
 CELLS = {cell["id"]: cell for cell in NB["cells"]}
@@ -91,7 +92,7 @@ def _make_byod(directory: Path, float64_index: int | None = None) -> list[dict]:
 
 
 def _write_manifest(directory: Path, records) -> None:
-    (directory / "manifest.json").write_text(json.dumps({"units": "metres", "records": records}))
+    (directory / "manifest.json").write_text(json.dumps(MANIFEST_HEAD | {"records": records}))
 
 
 @pytest.fixture(scope="module")
@@ -540,3 +541,29 @@ def test_metric_tables_list_uninformative_images_separately(monkeypatch, capsys,
     table = next(text for text in shown if "equal-image means" in text)
     assert "| m | all | 2 | 0.20000 | 0.80000 |" in table
     assert "m c (2 pixels" in capsys.readouterr().out
+
+
+# ---- DEP2-CX1 (owner decision A): BYOD references must declare z-depth -------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("convention", "needle"),
+    [(None, "found no depth_convention"), ("ray_distance", "found depth_convention 'ray_distance'")],
+)
+def test_byod_manifest_must_declare_z_depth(worker, tmp_path, convention, needle):
+    records = _make_byod(tmp_path / "byod")
+    manifest = {"units": "metres", "records": records}
+    if convention is not None:
+        manifest["depth_convention"] = convention
+    (tmp_path / "byod/manifest.json").write_text(json.dumps(manifest))
+    with pytest.raises(worker.InputRefused) as caught:
+        worker.load_byod(tmp_path / "byod")
+    message = str(caught.value)
+    assert needle in message and '"depth_convention": "z_depth"' in message
+    assert "ray_distance / sqrt" in message
+    assert caught.value.__cause__ is None
+
+
+def test_depth_convention_is_documented():
+    assert '"depth_convention": "z_depth"' in SOURCE["md-21"] and "z-depth" in SOURCE["md-00b"]
+    assert "depth convention" in SOURCE["md-25"]

@@ -2,7 +2,7 @@
 
 | Term | Meaning in this notebook |
 |---|---|
-| **Depth / metres** | Distance from the camera to the surface seen at a pixel, in metres. "Distance" can mean either the length of the viewing ray to the surface or the distance along the camera's forward (optical) axis; the two agree at the image centre and differ towards the edges. This notebook has not verified which convention the pinned DIODE references or ZoeDepth's outputs use. |
+| **Depth / metres** | Distance from the camera to the surface seen at a pixel, in metres. "Distance" can mean either the length of the viewing ray to the surface or the distance along the camera's forward (optical) axis; the two agree at the image centre and differ towards the edges. Both models and the pinned DIODE references use **z-depth** (along the forward axis). For DIODE this was established empirically in review round 2026-10-12: with DIODE's published camera intrinsics, all 80 clearly planar regions in the 40 pinned views (walls, floors) were flatter when read as z-depth than as ray distance (median 8.7 times flatter). ZoeDepth's own code treats its output as z-depth. Your own references must use z-depth too. |
 | **Inverse depth** | `1 / depth`. Larger values mean nearer surfaces. Depth Anything predicts a *relative* inverse depth: its scale and offset are unknown, so it is not in metres. |
 | **Reference depth / sensor mask** | The measured depth from the dataset's scanner, and a true/false map of the pixels where the scanner returned a usable value. |
 | **AbsRel** | Mean of `abs(predicted − reference) / reference` over the scored pixels; lower is better. |

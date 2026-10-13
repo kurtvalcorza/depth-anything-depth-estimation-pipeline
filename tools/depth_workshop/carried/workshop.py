@@ -422,6 +422,16 @@ def load_byod(root: Path) -> list[dict]:
         )
     if data.get("units") != "metres" or not isinstance(data.get("records"), list):
         raise InputRefused("manifest requires units='metres' and records list")
+    # DEP2-CX1: references must be z-depth (distance along the optical axis), the convention of the default DIODE
+    # sample (planarity test, round 2026-10-12) and of ZoeDepth's output; ray distances are refused, not converted.
+    convention = data.get("depth_convention")
+    if convention != "z_depth":
+        found = "no depth_convention" if convention is None else f"depth_convention {convention!r}"
+        raise InputRefused(
+            'manifest.json must declare "depth_convention": "z_depth" (depth along the camera\'s optical axis, the'
+            f" convention of the default sample and of ZoeDepth), found {found}; convert ray distances first with"
+            " z = ray_distance / sqrt(1 + ((u - cx) / fx)**2 + ((v - cy) / fy)**2)"
+        )
     if not 12 <= len(data["records"]) <= 128:
         raise InputRefused("BYOD requires 12..128 records")
     records, pixels = [], 0

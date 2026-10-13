@@ -25,6 +25,7 @@ import pytest
 from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[1]
+MANIFEST_HEAD = {"units": "metres", "depth_convention": "z_depth"}  # DEP2-CX1
 NOTEBOOK = ROOT / "tutorials" / "DIMER_MultiModel_Depth_Estimation_Workshop.ipynb"
 NB = json.loads(NOTEBOOK.read_text(encoding="utf-8"))
 CELLS = {cell["id"]: cell for cell in NB["cells"]}
@@ -111,7 +112,7 @@ def _make_byod(directory: Path) -> list[dict]:
                     "role": role,
                 }
             )
-    (directory / "manifest.json").write_text(json.dumps({"units": "metres", "records": records}))
+    (directory / "manifest.json").write_text(json.dumps(MANIFEST_HEAD | {"records": records}))
     return records
 
 
@@ -136,7 +137,7 @@ def _set(index: int, key: str, value):
             records[index].pop(key)
         else:
             records[index][key] = value
-        (directory / "manifest.json").write_text(json.dumps({"units": "metres", "records": records}))
+        (directory / "manifest.json").write_text(json.dumps(MANIFEST_HEAD | {"records": records}))
 
     return mutate
 

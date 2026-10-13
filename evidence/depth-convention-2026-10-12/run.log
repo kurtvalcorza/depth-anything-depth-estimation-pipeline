@@ -1,0 +1,108 @@
+{"image": "view-000", "domain": "indoors", "regions": 8, "median_rel_rms_z": 0.004602679691883429, "median_rel_rms_ray": 0.007152563360076037, "median_ratio_ray_over_z": 1.9996244502165765, "regions_favouring_z": 7}
+{"image": "view-001", "domain": "indoors", "regions": 8, "median_rel_rms_z": 0.002627397939378693, "median_rel_rms_ray": 0.0067992210933448035, "median_ratio_ray_over_z": 2.5905509066653165, "regions_favouring_z": 8}
+{"image": "view-002", "domain": "indoors", "regions": 8, "median_rel_rms_z": 0.004680006060466366, "median_rel_rms_ray": 0.008261895694313471, "median_ratio_ray_over_z": 2.9828707180626552, "regions_favouring_z": 6}
+{"image": "view-003", "domain": "indoors", "regions": 8, "median_rel_rms_z": 0.004708154640978348, "median_rel_rms_ray": 0.010297273929669065, "median_ratio_ray_over_z": 3.713284996124048, "regions_favouring_z": 6}
+{"image": "view-004", "domain": "indoors", "regions": 8, "median_rel_rms_z": 0.004384950341155743, "median_rel_rms_ray": 0.00859224088359692, "median_ratio_ray_over_z": 1.9986812458300238, "regions_favouring_z": 5}
+{"image": "view-005", "domain": "indoors", "regions": 8, "median_rel_rms_z": 0.003947965956447991, "median_rel_rms_ray": 0.005797615746189576, "median_ratio_ray_over_z": 1.432592065591039, "regions_favouring_z": 5}
+{"image": "view-006", "domain": "indoors", "regions": 7, "median_rel_rms_z": 0.0015806251799568517, "median_rel_rms_ray": 0.005707670593749276, "median_ratio_ray_over_z": 4.94765332544357, "regions_favouring_z": 7}
+{"image": "view-007", "domain": "indoors", "regions": 7, "median_rel_rms_z": 0.0012288123372359353, "median_rel_rms_ray": 0.0057487990016220625, "median_ratio_ray_over_z": 4.577855018749969, "regions_favouring_z": 7}
+{"image": "view-008", "domain": "indoors", "regions": 8, "median_rel_rms_z": 0.0034590464999015454, "median_rel_rms_ray": 0.006267865339427565, "median_ratio_ray_over_z": 2.5380066034122226, "regions_favouring_z": 6}
+{"image": "view-009", "domain": "indoors", "regions": 8, "median_rel_rms_z": 0.004568531784441722, "median_rel_rms_ray": 0.005954764896980767, "median_ratio_ray_over_z": 1.9018474176845055, "regions_favouring_z": 7}
+{"image": "view-010", "domain": "indoors", "regions": 8, "median_rel_rms_z": 0.00823405157508764, "median_rel_rms_ray": 0.010630137768958929, "median_ratio_ray_over_z": 0.9842561119829664, "regions_favouring_z": 4}
+{"image": "view-011", "domain": "indoors", "regions": 8, "median_rel_rms_z": 0.006012214366839514, "median_rel_rms_ray": 0.010834416136638853, "median_ratio_ray_over_z": 1.2446216174133145, "regions_favouring_z": 4}
+{"image": "view-012", "domain": "indoors", "regions": 8, "median_rel_rms_z": 0.003418211101846047, "median_rel_rms_ray": 0.005793142792481738, "median_ratio_ray_over_z": 1.696159460558401, "regions_favouring_z": 5}
+{"image": "view-013", "domain": "indoors", "regions": 8, "median_rel_rms_z": 0.0055407673359489954, "median_rel_rms_ray": 0.005667521057004068, "median_ratio_ray_over_z": 1.4531587023365422, "regions_favouring_z": 4}
+{"image": "view-014", "domain": "indoors", "regions": 8, "median_rel_rms_z": 0.001425636999811287, "median_rel_rms_ray": 0.00643065287620968, "median_ratio_ray_over_z": 12.311339761494509, "regions_favouring_z": 7}
+{"image": "view-015", "domain": "indoors", "regions": 7, "median_rel_rms_z": 0.0006366404478392834, "median_rel_rms_ray": 0.005540685655738372, "median_ratio_ray_over_z": 14.812946368794144, "regions_favouring_z": 7}
+{"image": "view-016", "domain": "indoors", "regions": 7, "median_rel_rms_z": 0.002037741512099063, "median_rel_rms_ray": 0.005298832716348848, "median_ratio_ray_over_z": 2.792467646618544, "regions_favouring_z": 6}
+{"image": "view-017", "domain": "indoors", "regions": 7, "median_rel_rms_z": 0.003362076605083811, "median_rel_rms_ray": 0.005880161206955072, "median_ratio_ray_over_z": 1.914993747895982, "regions_favouring_z": 5}
+{"image": "view-018", "domain": "indoors", "regions": 8, "median_rel_rms_z": 0.010933787873010707, "median_rel_rms_ray": 0.008072116579705923, "median_ratio_ray_over_z": 1.8538524717232039, "regions_favouring_z": 4}
+{"image": "view-019", "domain": "indoors", "regions": 8, "median_rel_rms_z": 0.0033807202188163923, "median_rel_rms_ray": 0.010108969957760557, "median_ratio_ray_over_z": 8.369104688754096, "regions_favouring_z": 5}
+{"image": "view-020", "domain": "outdoor", "regions": 8, "median_rel_rms_z": 0.005976388022815882, "median_rel_rms_ray": 0.009578333503512185, "median_ratio_ray_over_z": 1.4574321654049363, "regions_favouring_z": 5}
+{"image": "view-021", "domain": "outdoor", "regions": 8, "median_rel_rms_z": 0.00812543566962767, "median_rel_rms_ray": 0.006628977870756219, "median_ratio_ray_over_z": 0.8436373180200798, "regions_favouring_z": 4}
+{"image": "view-022", "domain": "outdoor", "regions": 8, "median_rel_rms_z": 0.0071936522163071216, "median_rel_rms_ray": 0.00865711244376487, "median_ratio_ray_over_z": 1.200593904829565, "regions_favouring_z": 6}
+{"image": "view-023", "domain": "outdoor", "regions": 8, "median_rel_rms_z": 0.007649195314943463, "median_rel_rms_ray": 0.007587454270045562, "median_ratio_ray_over_z": 0.9988163096424303, "regions_favouring_z": 4}
+{"image": "view-024", "domain": "outdoor", "regions": 8, "median_rel_rms_z": 0.004795989901830005, "median_rel_rms_ray": 0.00895384434370465, "median_ratio_ray_over_z": 1.9064711947481068, "regions_favouring_z": 5}
+{"image": "view-025", "domain": "outdoor", "regions": 8, "median_rel_rms_z": 0.0077687612376591934, "median_rel_rms_ray": 0.0061355735540849325, "median_ratio_ray_over_z": 1.2687096889489218, "regions_favouring_z": 4}
+{"image": "view-026", "domain": "outdoor", "regions": 8, "median_rel_rms_z": 0.007668049958990031, "median_rel_rms_ray": 0.007715380989993066, "median_ratio_ray_over_z": 0.9857054563372613, "regions_favouring_z": 4}
+{"image": "view-027", "domain": "outdoor", "regions": 8, "median_rel_rms_z": 0.0067353619613200735, "median_rel_rms_ray": 0.006437497971984255, "median_ratio_ray_over_z": 1.0090207475826805, "regions_favouring_z": 4}
+{"image": "view-028", "domain": "outdoor", "regions": 8, "median_rel_rms_z": 0.008067025288552562, "median_rel_rms_ray": 0.008993568317777978, "median_ratio_ray_over_z": 1.1102809724246567, "regions_favouring_z": 4}
+{"image": "view-029", "domain": "outdoor", "regions": 8, "median_rel_rms_z": 0.007123752653632069, "median_rel_rms_ray": 0.008371910550464315, "median_ratio_ray_over_z": 1.099866822258071, "regions_favouring_z": 4}
+{"image": "view-030", "domain": "outdoor", "regions": 8, "median_rel_rms_z": 0.007190696845740521, "median_rel_rms_ray": 0.007142940182770249, "median_ratio_ray_over_z": 1.0236149761241924, "regions_favouring_z": 5}
+{"image": "view-031", "domain": "outdoor", "regions": 8, "median_rel_rms_z": 0.004756567048244911, "median_rel_rms_ray": 0.005564853454541442, "median_ratio_ray_over_z": 1.149065983633463, "regions_favouring_z": 5}
+{"image": "view-032", "domain": "outdoor", "regions": 8, "median_rel_rms_z": 0.010276118258532715, "median_rel_rms_ray": 0.011775909714819743, "median_ratio_ray_over_z": 3.3470961606401772, "regions_favouring_z": 4}
+{"image": "view-033", "domain": "outdoor", "regions": 8, "median_rel_rms_z": 0.007048202542049476, "median_rel_rms_ray": 0.010329425390118108, "median_ratio_ray_over_z": 2.253157161754659, "regions_favouring_z": 5}
+{"image": "view-034", "domain": "outdoor", "regions": 8, "median_rel_rms_z": 0.005336927878803922, "median_rel_rms_ray": 0.008156415284098571, "median_ratio_ray_over_z": 1.694617143841955, "regions_favouring_z": 5}
+{"image": "view-035", "domain": "outdoor", "regions": 8, "median_rel_rms_z": 0.005410903648314844, "median_rel_rms_ray": 0.007257304166108565, "median_ratio_ray_over_z": 1.4621125327965698, "regions_favouring_z": 5}
+{"image": "view-036", "domain": "outdoor", "regions": 8, "median_rel_rms_z": 0.00953595086128874, "median_rel_rms_ray": 0.008398837011592518, "median_ratio_ray_over_z": 0.9599427317215479, "regions_favouring_z": 4}
+{"image": "view-037", "domain": "outdoor", "regions": 8, "median_rel_rms_z": 0.006740964521750158, "median_rel_rms_ray": 0.006717148421327406, "median_ratio_ray_over_z": 1.0046506361037397, "regions_favouring_z": 4}
+{"image": "view-038", "domain": "outdoor", "regions": 8, "median_rel_rms_z": 0.006193262444995764, "median_rel_rms_ray": 0.006229808729426298, "median_ratio_ray_over_z": 1.0059552926945292, "regions_favouring_z": 5}
+{"image": "view-039", "domain": "outdoor", "regions": 8, "median_rel_rms_z": 0.005571660581278531, "median_rel_rms_ray": 0.005118327506793988, "median_ratio_ray_over_z": 0.9960416231503004, "regions_favouring_z": 4}
+{
+ "0.8": {
+  "regions": 315,
+  "favour_z": 224,
+  "median_ratio_ray_over_z": 1.881952377142179,
+  "geometric_mean_ratio": 2.5737012495752856,
+  "wide_regions_span_ge_30deg": 238,
+  "wide_favour_z": 164,
+  "wide_median_ratio": 1.6001012294602341,
+  "median_rel_rms_z": 0.0059424856887929835,
+  "median_rel_rms_ray": 0.010984415665624851
+ },
+ "0.9": {
+  "regions": 315,
+  "favour_z": 211,
+  "median_ratio_ray_over_z": 1.6574286939649685,
+  "geometric_mean_ratio": 2.1152224267291957,
+  "wide_regions_span_ge_30deg": 238,
+  "wide_favour_z": 154,
+  "wide_median_ratio": 1.3577526703308662,
+  "median_rel_rms_z": 0.005700042853205542,
+  "median_rel_rms_ray": 0.008324280761667746
+ },
+ "1.0": {
+  "regions": 315,
+  "favour_z": 205,
+  "median_ratio_ray_over_z": 1.3903463619765821,
+  "geometric_mean_ratio": 1.811938795577929,
+  "wide_regions_span_ge_30deg": 238,
+  "wide_favour_z": 150,
+  "wide_median_ratio": 1.2209557877474848,
+  "median_rel_rms_z": 0.00549823820915383,
+  "median_rel_rms_ray": 0.006955264900196029
+ },
+ "1.1": {
+  "regions": 315,
+  "favour_z": 198,
+  "median_ratio_ray_over_z": 1.3148319842620544,
+  "geometric_mean_ratio": 1.6740334917830553,
+  "wide_regions_span_ge_30deg": 238,
+  "wide_favour_z": 145,
+  "wide_median_ratio": 1.1387514279285242,
+  "median_rel_rms_z": 0.005334753020375419,
+  "median_rel_rms_ray": 0.006774825054025816
+ },
+ "1.2": {
+  "regions": 315,
+  "favour_z": 195,
+  "median_ratio_ray_over_z": 1.204566637014688,
+  "geometric_mean_ratio": 1.6012705056182446,
+  "wide_regions_span_ge_30deg": 238,
+  "wide_favour_z": 142,
+  "wide_median_ratio": 1.0979185941292755,
+  "median_rel_rms_z": 0.005215233451700852,
+  "median_rel_rms_ray": 0.006588851121982637
+ },
+ "1.3": {
+  "regions": 315,
+  "favour_z": 192,
+  "median_ratio_ray_over_z": 1.1521179909249344,
+  "geometric_mean_ratio": 1.5444296913619244,
+  "wide_regions_span_ge_30deg": 238,
+  "wide_favour_z": 140,
+  "wide_median_ratio": 1.0753172534250437,
+  "median_rel_rms_z": 0.0049898897449968446,
+  "median_rel_rms_ray": 0.0062562964147005505
+ }
+}
