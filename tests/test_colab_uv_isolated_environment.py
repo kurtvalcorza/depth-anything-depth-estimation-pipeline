@@ -141,8 +141,9 @@ def test_no_cell_line_over_2000_characters(notebook_lines: list[str]) -> None:
 
 
 def test_workshop_notebook_is_untouched() -> None:
+    # Blob fa9244d9d381 is the 2026-10-12 review fix of the workshop (DEP2-*, peer-review follow-up, owner rulings).
     raw = WORKSHOP.read_bytes()
-    assert hashlib.sha1(b"blob %d\0" % len(raw) + raw).hexdigest().startswith("66021da652f7")
+    assert hashlib.sha1(b"blob %d\0" % len(raw) + raw).hexdigest().startswith("3ae9644c272e")
 
 
 @pytest.mark.skipif(os.name != "posix", reason="the worker uses POSIX fd passing, as on Colab/Kaggle")

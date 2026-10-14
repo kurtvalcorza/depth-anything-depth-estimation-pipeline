@@ -1,0 +1,446 @@
+{
+ "0.8": {
+  "all": {
+   "n": 315,
+   "favour_z": 224,
+   "median_ratio_ray_over_z": 1.881952377142179,
+   "geometric_mean": 2.5737012495752856,
+   "q10": 0.6282861572676045,
+   "median_rel_rms_z": 0.0059424856887929835,
+   "median_rel_rms_ray": 0.010984415665624851
+  },
+  "clearly_planar": {
+   "n": 76,
+   "favour_z": 76,
+   "median_ratio_ray_over_z": 14.44706197751605,
+   "geometric_mean": 12.01908741900683,
+   "q10": 3.3055997128373535,
+   "median_rel_rms_z": 0.001727660351816201,
+   "median_rel_rms_ray": 0.009061558028656734
+  },
+  "clearly_planar_wide": {
+   "n": 42,
+   "favour_z": 42,
+   "median_ratio_ray_over_z": 17.448835996280117,
+   "geometric_mean": 15.46024826740606,
+   "q10": 3.829495634737961,
+   "median_rel_rms_z": 0.0019054085314074835,
+   "median_rel_rms_ray": 0.03139798224960071
+  },
+  "clearly_planar_found_under_ray": {
+   "n": 33,
+   "favour_z": 33,
+   "median_ratio_ray_over_z": 8.752934230103467,
+   "geometric_mean": 11.011352578924303,
+   "q10": 2.8187223323155446,
+   "median_rel_rms_z": 0.0009934889318192973,
+   "median_rel_rms_ray": 0.00814341945936557
+  },
+  "found_under_z": {
+   "n": 155,
+   "favour_z": 154,
+   "median_ratio_ray_over_z": 4.499968018170763,
+   "geometric_mean": 4.659319428234059,
+   "q10": 1.1631217318407931,
+   "median_rel_rms_z": 0.004714834069766121,
+   "median_rel_rms_ray": 0.020781441892812863
+  },
+  "found_under_ray": {
+   "n": 160,
+   "favour_z": 70,
+   "median_ratio_ray_over_z": 0.9565352565001135,
+   "geometric_mean": 1.4482679419166682,
+   "q10": 0.5308661733534785,
+   "median_rel_rms_z": 0.009230677883108478,
+   "median_rel_rms_ray": 0.00884825465262873
+  },
+  "indoors": {
+   "n": 155,
+   "favour_z": 123,
+   "median_ratio_ray_over_z": 4.303448223364628,
+   "geometric_mean": 4.094581364493697,
+   "q10": 0.593317615235409,
+   "median_rel_rms_z": 0.003741680036166718,
+   "median_rel_rms_ray": 0.012582017041264068
+  },
+  "outdoor": {
+   "n": 160,
+   "favour_z": 101,
+   "median_ratio_ray_over_z": 1.1059887403655204,
+   "geometric_mean": 1.6413770874804132,
+   "q10": 0.6563218355824738,
+   "median_rel_rms_z": 0.008204401000939677,
+   "median_rel_rms_ray": 0.010162791019366188
+  }
+ },
+ "0.9": {
+  "all": {
+   "n": 315,
+   "favour_z": 211,
+   "median_ratio_ray_over_z": 1.6574286939649685,
+   "geometric_mean": 2.1152224267291957,
+   "q10": 0.4499313280031919,
+   "median_rel_rms_z": 0.005700042853205542,
+   "median_rel_rms_ray": 0.008324280761667746
+  },
+  "clearly_planar": {
+   "n": 78,
+   "favour_z": 78,
+   "median_ratio_ray_over_z": 11.021304255791733,
+   "geometric_mean": 9.608185446759986,
+   "q10": 2.680499585996037,
+   "median_rel_rms_z": 0.0018102814101422925,
+   "median_rel_rms_ray": 0.007302171326069512
+  },
+  "clearly_planar_wide": {
+   "n": 43,
+   "favour_z": 43,
+   "median_ratio_ray_over_z": 14.371694413554406,
+   "geometric_mean": 12.388943134485661,
+   "q10": 3.290337375109211,
+   "median_rel_rms_z": 0.0019595311567286357,
+   "median_rel_rms_ray": 0.025694903986372145
+  },
+  "clearly_planar_found_under_ray": {
+   "n": 33,
+   "favour_z": 33,
+   "median_ratio_ray_over_z": 6.988587417242652,
+   "geometric_mean": 9.072090638957174,
+   "q10": 2.292831894243666,
+   "median_rel_rms_z": 0.0009993558848183125,
+   "median_rel_rms_ray": 0.006669439492206275
+  },
+  "found_under_z": {
+   "n": 155,
+   "favour_z": 154,
+   "median_ratio_ray_over_z": 3.736322884018286,
+   "geometric_mean": 4.007316600345999,
+   "q10": 1.1237350731258116,
+   "median_rel_rms_z": 0.004553289407320529,
+   "median_rel_rms_ray": 0.01732830662910011
+  },
+  "found_under_ray": {
+   "n": 160,
+   "favour_z": 57,
+   "median_ratio_ray_over_z": 0.8656003576870639,
+   "geometric_mean": 1.1390170624324476,
+   "q10": 0.3259290123837437,
+   "median_rel_rms_z": 0.00856874541925863,
+   "median_rel_rms_ray": 0.006877857998350313
+  },
+  "indoors": {
+   "n": 155,
+   "favour_z": 119,
+   "median_ratio_ray_over_z": 3.53556784554761,
+   "geometric_mean": 3.256458668527533,
+   "q10": 0.40065643518640187,
+   "median_rel_rms_z": 0.003624269540153775,
+   "median_rel_rms_ray": 0.008404891548727728
+  },
+  "outdoor": {
+   "n": 160,
+   "favour_z": 92,
+   "median_ratio_ray_over_z": 1.0529550744371337,
+   "geometric_mean": 1.3925873225385341,
+   "q10": 0.45274121870069245,
+   "median_rel_rms_z": 0.007608620530958472,
+   "median_rel_rms_ray": 0.008314439673733078
+  }
+ },
+ "1.0": {
+  "all": {
+   "n": 315,
+   "favour_z": 205,
+   "median_ratio_ray_over_z": 1.3903463619765821,
+   "geometric_mean": 1.811938795577929,
+   "q10": 0.3592709817165423,
+   "median_rel_rms_z": 0.00549823820915383,
+   "median_rel_rms_ray": 0.006955264900196029
+  },
+  "clearly_planar": {
+   "n": 80,
+   "favour_z": 80,
+   "median_ratio_ray_over_z": 8.675692588569522,
+   "geometric_mean": 8.010853236230762,
+   "q10": 2.3161454145401117,
+   "median_rel_rms_z": 0.0018208788412291026,
+   "median_rel_rms_ray": 0.006606176092736893
+  },
+  "clearly_planar_wide": {
+   "n": 44,
+   "favour_z": 44,
+   "median_ratio_ray_over_z": 12.115611122382791,
+   "geometric_mean": 10.365376743204445,
+   "q10": 2.8115245204390824,
+   "median_rel_rms_z": 0.0018845147870532233,
+   "median_rel_rms_ray": 0.021423016776854546
+  },
+  "clearly_planar_found_under_ray": {
+   "n": 33,
+   "favour_z": 33,
+   "median_ratio_ray_over_z": 5.694874794865601,
+   "geometric_mean": 7.615853507904246,
+   "q10": 1.9080258358195734,
+   "median_rel_rms_z": 0.001002246897314619,
+   "median_rel_rms_ray": 0.005460398900769459
+  },
+  "found_under_z": {
+   "n": 155,
+   "favour_z": 154,
+   "median_ratio_ray_over_z": 3.176413355595691,
+   "geometric_mean": 3.505149561888746,
+   "q10": 1.0924577472497876,
+   "median_rel_rms_z": 0.004417821607949448,
+   "median_rel_rms_ray": 0.014043867078892663
+  },
+  "found_under_ray": {
+   "n": 160,
+   "favour_z": 51,
+   "median_ratio_ray_over_z": 0.7921858569167005,
+   "geometric_mean": 0.9561710460144432,
+   "q10": 0.2393324714818411,
+   "median_rel_rms_z": 0.007896148817331694,
+   "median_rel_rms_ray": 0.005595782047516275
+  },
+  "indoors": {
+   "n": 155,
+   "favour_z": 115,
+   "median_ratio_ray_over_z": 2.965980813187907,
+   "geometric_mean": 2.7019824517616495,
+   "q10": 0.29181492035045664,
+   "median_rel_rms_z": 0.003484146373526787,
+   "median_rel_rms_ray": 0.005855211784057527
+  },
+  "outdoor": {
+   "n": 160,
+   "favour_z": 90,
+   "median_ratio_ray_over_z": 1.0225993145187582,
+   "geometric_mean": 1.2303470073846083,
+   "q10": 0.3770700505462836,
+   "median_rel_rms_z": 0.007027178743765749,
+   "median_rel_rms_ray": 0.00744657616972936
+  }
+ },
+ "1.1": {
+  "all": {
+   "n": 315,
+   "favour_z": 198,
+   "median_ratio_ray_over_z": 1.3148319842620544,
+   "geometric_mean": 1.6740334917830553,
+   "q10": 0.3630224580454173,
+   "median_rel_rms_z": 0.005334753020375419,
+   "median_rel_rms_ray": 0.006774825054025816
+  },
+  "clearly_planar": {
+   "n": 86,
+   "favour_z": 85,
+   "median_ratio_ray_over_z": 6.758746374034867,
+   "geometric_mean": 6.353180264741746,
+   "q10": 1.6465789207133137,
+   "median_rel_rms_z": 0.001828976734007747,
+   "median_rel_rms_ray": 0.005706724620668414
+  },
+  "clearly_planar_wide": {
+   "n": 47,
+   "favour_z": 47,
+   "median_ratio_ray_over_z": 10.243702792966314,
+   "geometric_mean": 8.425901455072783,
+   "q10": 2.4607570052301786,
+   "median_rel_rms_z": 0.0019423278518202049,
+   "median_rel_rms_ray": 0.01747172301721049
+  },
+  "clearly_planar_found_under_ray": {
+   "n": 35,
+   "favour_z": 34,
+   "median_ratio_ray_over_z": 3.8362433764194575,
+   "geometric_mean": 5.909042781418645,
+   "q10": 1.6163435352260345,
+   "median_rel_rms_z": 0.0011652546728671209,
+   "median_rel_rms_ray": 0.004556300097681326
+  },
+  "found_under_z": {
+   "n": 155,
+   "favour_z": 154,
+   "median_ratio_ray_over_z": 2.792979543805418,
+   "geometric_mean": 3.1109748064091733,
+   "q10": 1.0704468156706124,
+   "median_rel_rms_z": 0.004301567377335744,
+   "median_rel_rms_ray": 0.011532178398868416
+  },
+  "found_under_ray": {
+   "n": 160,
+   "favour_z": 44,
+   "median_ratio_ray_over_z": 0.7509811794951771,
+   "geometric_mean": 0.9184217856005721,
+   "q10": 0.25964793830268706,
+   "median_rel_rms_z": 0.00734821024259447,
+   "median_rel_rms_ray": 0.0049194190809479935
+  },
+  "indoors": {
+   "n": 155,
+   "favour_z": 113,
+   "median_ratio_ray_over_z": 2.573788186565827,
+   "geometric_mean": 2.4338422712567973,
+   "q10": 0.314938559080554,
+   "median_rel_rms_z": 0.003444774296102879,
+   "median_rel_rms_ray": 0.006486765381858046
+  },
+  "outdoor": {
+   "n": 160,
+   "favour_z": 85,
+   "median_ratio_ray_over_z": 1.0101249466948483,
+   "geometric_mean": 1.1649703289447877,
+   "q10": 0.3660485243029048,
+   "median_rel_rms_z": 0.006548285859543662,
+   "median_rel_rms_ray": 0.0069008382781985305
+  }
+ },
+ "1.2": {
+  "all": {
+   "n": 315,
+   "favour_z": 195,
+   "median_ratio_ray_over_z": 1.204566637014688,
+   "geometric_mean": 1.6012705056182446,
+   "q10": 0.39585215474680185,
+   "median_rel_rms_z": 0.005215233451700852,
+   "median_rel_rms_ray": 0.006588851121982637
+  },
+  "clearly_planar": {
+   "n": 88,
+   "favour_z": 86,
+   "median_ratio_ray_over_z": 5.820639235931912,
+   "geometric_mean": 5.4273862743185175,
+   "q10": 1.4664439483754466,
+   "median_rel_rms_z": 0.0018529354431827318,
+   "median_rel_rms_ray": 0.004981763678417961
+  },
+  "clearly_planar_wide": {
+   "n": 49,
+   "favour_z": 48,
+   "median_ratio_ray_over_z": 8.791478750608935,
+   "geometric_mean": 6.975531734803893,
+   "q10": 2.1402475744971596,
+   "median_rel_rms_z": 0.0019216376239789812,
+   "median_rel_rms_ray": 0.015081828868337713
+  },
+  "clearly_planar_found_under_ray": {
+   "n": 36,
+   "favour_z": 34,
+   "median_ratio_ray_over_z": 3.1922367140566026,
+   "geometric_mean": 4.895633188563409,
+   "q10": 1.379853382166859,
+   "median_rel_rms_z": 0.0011742579080894064,
+   "median_rel_rms_ray": 0.003852901765495999
+  },
+  "found_under_z": {
+   "n": 155,
+   "favour_z": 154,
+   "median_ratio_ray_over_z": 2.446256047605048,
+   "geometric_mean": 2.79645817564736,
+   "q10": 1.0542688369274238,
+   "median_rel_rms_z": 0.004230226675371185,
+   "median_rel_rms_ray": 0.010026653221828743
+  },
+  "found_under_ray": {
+   "n": 160,
+   "favour_z": 41,
+   "median_ratio_ray_over_z": 0.7320406128173348,
+   "geometric_mean": 0.9330138025152667,
+   "q10": 0.3261613784192642,
+   "median_rel_rms_z": 0.006955509365966149,
+   "median_rel_rms_ray": 0.004931542178122142
+  },
+  "indoors": {
+   "n": 155,
+   "favour_z": 111,
+   "median_ratio_ray_over_z": 2.2683312290691138,
+   "geometric_mean": 2.2694105446035353,
+   "q10": 0.37541719332068996,
+   "median_rel_rms_z": 0.003396871974684708,
+   "median_rel_rms_ray": 0.006632237716133288
+  },
+  "outdoor": {
+   "n": 160,
+   "favour_z": 84,
+   "median_ratio_ray_over_z": 1.0058251025343572,
+   "geometric_mean": 1.1422182674280388,
+   "q10": 0.4021999475990444,
+   "median_rel_rms_z": 0.00606836791889901,
+   "median_rel_rms_ray": 0.006588242097028286
+  }
+ },
+ "1.3": {
+  "all": {
+   "n": 315,
+   "favour_z": 192,
+   "median_ratio_ray_over_z": 1.1521179909249344,
+   "geometric_mean": 1.5444296913619244,
+   "q10": 0.4463183324561198,
+   "median_rel_rms_z": 0.0049898897449968446,
+   "median_rel_rms_ray": 0.0062562964147005505
+  },
+  "clearly_planar": {
+   "n": 91,
+   "favour_z": 87,
+   "median_ratio_ray_over_z": 4.843192370905214,
+   "geometric_mean": 4.524525534559979,
+   "q10": 1.2241793637496061,
+   "median_rel_rms_z": 0.0018747176050608924,
+   "median_rel_rms_ray": 0.0038407275737275606
+  },
+  "clearly_planar_wide": {
+   "n": 51,
+   "favour_z": 48,
+   "median_ratio_ray_over_z": 7.632821272918712,
+   "geometric_mean": 5.646780211026652,
+   "q10": 1.5607531821500056,
+   "median_rel_rms_z": 0.0019160432185484346,
+   "median_rel_rms_ray": 0.011948719937036188
+  },
+  "clearly_planar_found_under_ray": {
+   "n": 39,
+   "favour_z": 35,
+   "median_ratio_ray_over_z": 2.673067127440813,
+   "geometric_mean": 3.829893572066187,
+   "q10": 1.0084547682478944,
+   "median_rel_rms_z": 0.0011704965243021011,
+   "median_rel_rms_ray": 0.0032383834015488203
+  },
+  "found_under_z": {
+   "n": 155,
+   "favour_z": 154,
+   "median_ratio_ray_over_z": 2.1383970044311296,
+   "geometric_mean": 2.5419332391939204,
+   "q10": 1.035311801794178,
+   "median_rel_rms_z": 0.004151807760643227,
+   "median_rel_rms_ray": 0.008586845085541897
+  },
+  "found_under_ray": {
+   "n": 160,
+   "favour_z": 38,
+   "median_ratio_ray_over_z": 0.7265572727660516,
+   "geometric_mean": 0.9530913308640833,
+   "q10": 0.40012327556714605,
+   "median_rel_rms_z": 0.006608430472516105,
+   "median_rel_rms_ray": 0.004989750782193067
+  },
+  "indoors": {
+   "n": 155,
+   "favour_z": 109,
+   "median_ratio_ray_over_z": 2.0218577467430126,
+   "geometric_mean": 2.13281530176799,
+   "q10": 0.4450303432680927,
+   "median_rel_rms_z": 0.0033418656834861876,
+   "median_rel_rms_ray": 0.006364104705104041
+  },
+  "outdoor": {
+   "n": 160,
+   "favour_z": 83,
+   "median_ratio_ray_over_z": 1.0044213153788637,
+   "geometric_mean": 1.1297018011243143,
+   "q10": 0.4539135508242815,
+   "median_rel_rms_z": 0.00564988333287164,
+   "median_rel_rms_ray": 0.006234243018418425
+  }
+ }
+}

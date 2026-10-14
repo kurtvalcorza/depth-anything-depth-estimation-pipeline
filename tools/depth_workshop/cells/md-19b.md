@@ -1,0 +1,3 @@
+### Optional: choose your own brightness factor
+
+**Predict → change one thing → run → observe → explain.** Pick a factor between 0.2 (much darker) and 2.0 (much brighter), predict how many of the six validation views will improve or worsen against factor 1.0, then set `RUN_OWN_FACTOR` and run the next cell after Run all has finished section 8. It applies the same pixel transform with the locked adapter, compares each view with its factor-1.0 result, and writes to its own folder. The canonical results, completion receipts and results ZIP are not changed, and model selection cannot change. Explain any difference from your prediction using the hint above.

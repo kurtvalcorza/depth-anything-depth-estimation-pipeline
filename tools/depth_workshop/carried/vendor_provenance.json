@@ -1,0 +1,22 @@
+{
+  "zoe": {
+    "repository": "kurtvalcorza/zoedepth-metric-depth-pipeline",
+    "revision": "194fbbc6111e36873a84eb78404a687201aa1d73",
+    "files": {
+      "zoe_reference.py": {
+        "source": "src/zoedepth_metric_depth_pipeline/pipeline.py",
+        "sha256": "1107ff98322c57e76c82ac41172059470ca36163f990de1a1ed0b455c1e07ba2"
+      },
+      "zoe_manifest.json": {
+        "source": "weights/zoedepth-nyu-kitti/dimer-base-manifest.json",
+        "sha256": "0c3aaba48ba5acbd8c99b30e5a341c6d15ddacd80d7b23608513f275bab853c5",
+        "carried_sha256": "03b7a287e192b38974a6e6184b0ac2fc8358795bb52ee10f3387af0b62a9e15b",
+        "line_endings": "upstream commits this manifest with CRLF (weights/** -text); sha256 is the upstream blob, carried_sha256 is the LF copy carried here"
+      },
+      "zoe_LICENSE": {
+        "source": "LICENSE",
+        "sha256": "f9da6567cb5a1828ccec41c7b72b70997fe6d9d63811b3f3177a7b01da52d138"
+      }
+    }
+  }
+}

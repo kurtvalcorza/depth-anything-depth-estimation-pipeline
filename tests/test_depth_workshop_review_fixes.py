@@ -25,6 +25,7 @@ import pytest
 from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[1]
+MANIFEST_HEAD = {"units": "metres", "depth_convention": "z_depth"}  # DEP2-CX1
 NOTEBOOK = ROOT / "tutorials" / "DIMER_MultiModel_Depth_Estimation_Workshop.ipynb"
 NB = json.loads(NOTEBOOK.read_text(encoding="utf-8"))
 CELLS = {cell["id"]: cell for cell in NB["cells"]}
@@ -111,7 +112,7 @@ def _make_byod(directory: Path) -> list[dict]:
                     "role": role,
                 }
             )
-    (directory / "manifest.json").write_text(json.dumps({"units": "metres", "records": records}))
+    (directory / "manifest.json").write_text(json.dumps(MANIFEST_HEAD | {"records": records}))
     return records
 
 
@@ -136,7 +137,7 @@ def _set(index: int, key: str, value):
             records[index].pop(key)
         else:
             records[index][key] = value
-        (directory / "manifest.json").write_text(json.dumps({"units": "metres", "records": records}))
+        (directory / "manifest.json").write_text(json.dumps(MANIFEST_HEAD | {"records": records}))
 
     return mutate
 
@@ -390,7 +391,7 @@ def test_unlabelled_inference_writes_a_preview_and_checks_its_prerequisite(ws, r
     result = json.loads((run.root / "unlabelled_output.json").read_text())
     assert result["abs_rel"] is None and "preview.png" in result["outputs"]
     with Image.open(Path(result["root"]) / "preview.png") as preview:
-        assert preview.size == (1260, 350)
+        assert preview.size == (1260, 380)  # 380: metre colour bar (2026-10-12)
     with pytest.raises(RuntimeError, match="section 5"):
         ws.infer(run.base / "no_run", str(photo))
 
@@ -421,7 +422,8 @@ def test_learner_cells_run_against_the_stand_in_outputs(ws, run, monkeypatch, ca
         "SESSION_START": time.perf_counter(),
         "BOOTSTRAP_SECONDS": 1.0,
         "CARRIED_HASHES": {},
-        "run_stage": lambda *a, **k: None,
+        # run_stage returns True for a completed stage (False only for a refused input; DEP2-m2, 2026-10-12)
+        "run_stage": lambda *a, **k: True,
         "show_json": lambda rel: json.loads((run.root / rel).read_text()),
         "show_previews": lambda pattern: None,
         "show_metric_tables": lambda *a, **k: None,
