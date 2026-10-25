@@ -1,6 +1,6 @@
 """Static release-asset validation for the Depth Anything V2 Small relative-depth DIMER pipeline.
 
-Checks the STANDALONE tutorial notebook (DIMER Notebook Specification 2.2 §4), the tutorial
+Checks the STANDALONE tutorial notebook (DIMER Notebook Specification 2.5 §4), the tutorial
 registry, model card, README, STATUS.md and weight documentation for source conformance and
 cross-document identity consistency, and runs the generator parity checks (PAR1–PAR3).
 
@@ -166,7 +166,7 @@ FORBIDDEN_OUTSIDE_MODULE = (
 # ---------------------------------------------------------------------------
 
 # 2.2 since 2026-10-03: the tutorial runs in the uv isolated environment (generator /2.1), no in-kernel install.
-NOTEBOOK_SPEC = "2.2"
+NOTEBOOK_SPEC = "2.5"
 # Learner-facing text of the former in-kernel install that must not come back.
 STALE_MARKDOWN = (
     "installed directly — there is no repository clone",
@@ -273,7 +273,7 @@ COMMON_MARKDOWN_MARKERS = (
     "without the repository being",
     "It does **not** establish benchmark superiority",
     "## References",
-    f"- Repository model card: https://github.com/kurtvalcorza/{REPO_NAME}/blob/main/MODEL_CARD.md",
+    f"https://github.com/kurtvalcorza/{REPO_NAME}/blob/main/MODEL_CARD.md",
 )
 # Patterns that must never appear in tutorial code (comment-stripped), in any cell.
 FORBIDDEN_PATTERNS = (
