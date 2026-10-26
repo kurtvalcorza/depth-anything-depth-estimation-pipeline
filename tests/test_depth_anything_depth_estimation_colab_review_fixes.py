@@ -249,7 +249,7 @@ def test_byod_with_too_few_training_views_names_the_training_split(tmp_path, mon
 @pytest.mark.parametrize("upload", [{}, {"a.zip": b"", "b.zip": b""}])
 def test_empty_or_multiple_upload_asks_for_one_file(tmp_path, monkeypatch, upload) -> None:
     ns, code = _section4_namespace(tmp_path, monkeypatch, upload=upload)
-    with pytest.raises(ValueError, match=rf"Upload exactly one \.zip file \(received {len(upload)}\).*BYOD_PATH"):
+    with pytest.raises(ValueError, match=rf"upload exactly one \.zip file \(received {len(upload)}\).*BYOD_PATH"):
         exec(compile(code, "<section 4>", "exec"), ns)
 
 
@@ -268,7 +268,7 @@ def test_uploaded_zip_still_goes_through_the_loader(tmp_path, monkeypatch) -> No
 
 def test_missing_byod_path_is_refused(tmp_path, monkeypatch) -> None:
     ns, code = _section4_namespace(tmp_path, monkeypatch, byod_path=str(tmp_path / "nope"))
-    with pytest.raises(FileNotFoundError, match="does not exist"):
+    with pytest.raises(ValueError, match="does not exist"):
         exec(compile(code, "<section 4>", "exec"), ns)
 
 
