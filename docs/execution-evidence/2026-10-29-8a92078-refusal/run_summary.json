@@ -1,0 +1,72 @@
+{
+  "repo": "depth-anything-depth-estimation-pipeline",
+  "sha": "8a9207873c3e478433d92aa571cfe1e4790c6cde",
+  "notebook": "tutorials/depth_anything_depth_estimation_colab.ipynb",
+  "blob": "7aa915fc2e1ada8d6ee6c371fd4b30f4c4c068dd",
+  "gpu": "T4",
+  "session": "suite-depth-8a92078-5b71",
+  "started_utc": "2026-10-29T15:02:55+00:00",
+  "runner": "Colab CLI `colab exec -f` on a fresh session (not a browser Run all)",
+  "overrides": [
+    {
+      "name": "USE_BYOD",
+      "from": "False",
+      "to": "True"
+    },
+    {
+      "name": "BYOD_PATH",
+      "from": "\\\"\\\"",
+      "to": "'/content/sample_data'"
+    }
+  ],
+  "run_copy_blob": "b0c2a39a49c82d611dc4e7e6ee80cf00d89c6524",
+  "run_copy_sha256": "c9d48dc9036549ea3b84b097b4637af8a3da23c300649d8e865cea1899eee3ef",
+  "run_copy_note": "refusal run: the run copy is the committed notebook with the listed assignment overrides, cut immediately after the refusal cell and re-serialised (nbformat layout); input_unchanged compares against that copy",
+  "truncated_after_cell": "depth_anything_depth_estimation-17",
+  "refusal_cell_ref": "depth_anything_depth_estimation-17",
+  "refusal_cell_index": 8,
+  "cells_dropped": 11,
+  "code_cells_dropped": 5,
+  "original_sha256": "c4bf234fb0f6ca9287f76304c140a4e9c3b686345d061451094cbaff5bdc523c",
+  "status": "[suite-depth-8a92078-5b71] gpu-t4-s-usw1b0-3jnd5fpbp6lud | Hardware: T4 | Shape: Standard | Variant: GPU | Status: IDLE",
+  "exec_exit_code": 0,
+  "stopped": true,
+  "stop_verified": true,
+  "wall_s": 99.0,
+  "input_unchanged": true,
+  "executed_file": "depth_anything_depth_estimation_colab_8a92078_colab-cli-t4_output.ipynb",
+  "log_cells": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8
+  ],
+  "log_total": 8,
+  "code_cells": 8,
+  "executed_cells": 5,
+  "errors": [
+    {
+      "cell": "depth_anything_depth_estimation-17",
+      "ename": "IsolatedCellRefusal",
+      "evalue": "sample_data: [Errno 2] No such file or directory: '/content/sample_data/records.csv'. Fix the file, then select this cell and choose Runtime \u2192 Run after."
+    }
+  ],
+  "execution_counts": [],
+  "sequential": null,
+  "executed_sha256": "abfcc325cad9d676a3418d46a9e9d152f5ea1eab4335005fb942648c7bd140ec",
+  "log_sequential_complete": true,
+  "mode": "expect_refusal",
+  "refusal_line": "Refused: sample_data: [Errno 2] No such file or directory: '/content/sample_data/records.csv'. Fix the file, then select this cell and choose Runtime \u2192 Run after.",
+  "halting_cell_index": 8,
+  "halting_cell_id": "depth_anything_depth_estimation-17",
+  "error_cells": [
+    8
+  ],
+  "refusal_fail_reasons": [],
+  "refusal_ok": true,
+  "verdict": "PASS"
+}
