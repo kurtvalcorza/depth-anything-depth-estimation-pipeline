@@ -111,6 +111,96 @@ def test_a_sample_path_failure_still_raises_unchanged(tmp_path, monkeypatch):
     assert not getattr(info.value, "dimer_refusal", False)
 
 
+# ---- the catch is narrow: only bad input is refused; an internal TypeError/OSError keeps its traceback ------------
+
+
+def _one_refused_line(exc: BaseException) -> str:
+    assert getattr(exc, "dimer_refusal", False) is True, repr(exc)
+    lines = exc._render_traceback_()
+    assert len(lines) == 1 and lines[0].startswith("Refused: ") and "Traceback" not in lines[0], lines
+    return lines[0]
+
+
+def test_the_byod_catch_is_narrow_in_the_notebook_source():
+    src = CELLS[SEC4].split("write_dataset_csv(", 1)[0]  # the BYOD try block; the probes below it are a separate demo
+    assert "except (TypeError" not in src and "except TypeError" not in src and "except OSError" not in src
+    assert src.count("except (OSError, zipfile.BadZipFile) as exc:") == 1 and src.count("except (KeyError, TypeError) as exc:") == 1
+    assert "        try:\n            records = load_byod_dataset(byod_path)\n        except (OSError, zipfile.BadZipFile) as exc:\n" in src
+    assert "\nexcept ValueError as exc:\n    if not USE_BYOD:\n        raise" in src
+
+
+def _zip_of(folder: Path, out: Path, *, drop: str = "", corrupt: str = "") -> Path:
+    import zipfile
+
+    with zipfile.ZipFile(out, "w") as archive:
+        for path in sorted(folder.iterdir()):
+            if path.name == drop:
+                continue
+            archive.writestr(path.name, b"not an image" if path.name == corrupt else path.read_bytes())
+    return out
+
+
+@pytest.mark.parametrize(
+    ("kind", "rule"),
+    [
+        ("undecodable image", "the dataset cannot be read (UnidentifiedImageError: "),
+        ("missing zip member", "a records.csv row names a file the dataset does not hold, or has fewer cells than the header (KeyError: 'v0_d.npy')"),
+        ("short row", "a records.csv row names a file the dataset does not hold, or has fewer cells than the header (TypeError: "),
+    ],
+)
+def test_a_bad_dataset_file_is_still_one_refused_line(tmp_path, monkeypatch, kind, rule):
+    folder = _write_byod_dir(tmp_path / "set", n_views=8, n_groups=4)
+    if kind == "undecodable image":
+        target = _zip_of(folder, tmp_path / "set.zip", corrupt="v0.png")
+    elif kind == "missing zip member":
+        target = _zip_of(folder, tmp_path / "set.zip", drop="v0_d.npy")
+    else:
+        rows = ["id,group,image,depth,mask", "v0,g0"] + [f"v{k},g{k % 4},v{k}.png,v{k}_d.npy,v{k}_m.npy" for k in range(1, 8)]
+        (folder / "records.csv").write_text("\n".join(rows) + "\n", encoding="utf-8")  # group first, so the short row passes the group check
+        target = folder
+    ns, code = _section4_namespace(tmp_path, monkeypatch, byod_path=str(target))
+    with pytest.raises(ValueError) as info:
+        exec(compile(code, "<section 4>", "exec"), ns)
+    line = _one_refused_line(info.value)
+    assert line.startswith(f"Refused: {target.name}: {rule}"), line
+    assert line.endswith("Fix the file, then select this cell and choose Runtime → Run after."), line
+
+
+@pytest.mark.parametrize("error", [TypeError("internal helper bug"), OSError("internal I/O bug")], ids=["TypeError", "OSError"])
+def test_an_internal_error_after_the_loader_keeps_its_traceback_and_clears_nothing(tmp_path, monkeypatch, error):
+    import traceback
+
+    data = _write_byod_dir(tmp_path / "set", n_views=8, n_groups=4)
+    (tmp_path / "outputs").mkdir()
+    earlier = tmp_path / "outputs" / f"{STEM}_earlier.json"
+    earlier.write_text("{}", encoding="utf-8")
+
+    def broken_disjoint(splits):
+        raise error
+
+    ns, code = _section4_namespace(tmp_path, monkeypatch, byod_path=str(data))
+    ns.update({"check_split_disjoint": broken_disjoint, "summary": "old"})
+    with pytest.raises(type(error)) as info:
+        exec(compile(code, "<section 4>", "exec"), ns)
+    assert info.value is error and not getattr(info.value, "dimer_refusal", False)
+    rendered = "".join(traceback.format_exception(info.value))
+    assert rendered.startswith("Traceback") and "broken_disjoint" in rendered and "Refused:" not in rendered
+    assert ns["summary"] == "old" and earlier.exists()  # nothing is cleared for an internal error
+
+
+def test_a_typeerror_in_a_non_input_helper_before_the_validators_is_not_turned_into_a_refusal(tmp_path, monkeypatch):
+    data = _write_byod_dir(tmp_path / "set", n_views=8, n_groups=4)
+
+    def buggy_split(records, seed):
+        raise TypeError("split bug")
+
+    ns, code = _section4_namespace(tmp_path, monkeypatch, byod_path=str(data))
+    ns["split_dataset"] = buggy_split
+    with pytest.raises(TypeError, match="split bug") as info:
+        exec(compile(code, "<section 4>", "exec"), ns)
+    assert not getattr(info.value, "dimer_refusal", False)
+
+
 WORKER_SETUP = [
     f"import sys; sys.path.insert(0, {str(ROOT / 'src')!r})",
     "import os\nfrom pathlib import Path\n\nimport numpy as np\nimport depth_anything_depth_estimation_pipeline.samples as _samples\nglobals().update({k: getattr(_samples, k) for k in dir(_samples) if not k.startswith('__')})",
